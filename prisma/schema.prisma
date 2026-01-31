@@ -1,0 +1,163 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  password      String
+  role          String    @default("DRIVER") // DRIVER, DISPATCHER, ADMIN
+  color         String?   // HEX barva pro zobrazení v kalendáři (např. #3B82F6)
+  ratingUp      Int       @default(0)       // počet kladných hodnocení
+  ratingDown    Int       @default(0)       // počet záporných hodnocení
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  availability  Availability[]
+  routes        Route[]
+  reviews       DriverReview[]
+
+  @@map("users")
+}
+
+model Availability {
+  id        String   @id @default(cuid())
+  userId    String
+  date      DateTime
+  status    String   @default("AVAILABLE") // AVAILABLE, UNAVAILABLE, PARTIAL
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@map("availability")
+}
+
+model Vehicle {
+  id        String   @id @default(cuid())
+  spz       String   @unique
+  name      String
+
+  // Sledování oleje - km od poslední výměny/kontroly
+  oilKm              Int      @default(0)    // aktuální km od poslední kontroly oleje
+  oilLimitKm         Int      @default(15000) // limit pro upozornění (výchozí 15000 km)
+  oilLastReset       DateTime @default(now()) // datum poslední kontroly
+
+  // Sledování AdBlue - km od posledního doplnění
+  adblueKm           Int      @default(0)    // aktuální km od posledního doplnění
+  adblueLimitKm      Int      @default(10000) // limit pro upozornění (výchozí 10000 km)
+  adblueLastReset    DateTime @default(now()) // datum posledního doplnění
+
+  // Sledování brzd - km od poslední výměny
+  brakesKm           Int      @default(0)    // aktuální km od poslední výměny brzd
+  brakesLimitKm      Int      @default(60000) // limit pro upozornění (výchozí 60000 km)
+  brakesLastReset    DateTime @default(now()) // datum poslední výměny
+
+  // Sledování ložisek - km od poslední výměny
+  bearingsKm         Int      @default(0)    // aktuální km od poslední výměny ložisek
+  bearingsLimitKm    Int      @default(100000) // limit pro upozornění (výchozí 100000 km)
+  bearingsLastReset  DateTime @default(now()) // datum poslední výměny
+
+  // Sledování brzdové kapaliny - datum poslední výměny
+  brakeFluidLastChange   DateTime @default(now()) // datum poslední výměny brzdové kapaliny
+  brakeFluidLimitMonths  Int      @default(24)    // limit v měsících (výchozí 24)
+
+  // Zelená karta - datum expirace
+  greenCardDate          DateTime? // datum expirace zelené karty
+  greenCardLimitMonths   Int      @default(12)    // limit v měsících (výchozí 12)
+
+  // Fridex - datum poslední výměny
+  fridexLastChange       DateTime? // datum poslední výměny fridexu
+  fridexLimitMonths      Int      @default(24)    // limit v měsících (výchozí 24)
+
+  // Technická kontrola - datum expirace
+  technicalInspectionDate DateTime? // datum příští technické kontroly
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  routes    Route[]
+  repairs   Repair[]
+
+  @@map("vehicles")
+}
+
+model Repair {
+  id          String   @id @default(cuid())
+  vehicleId   String
+  date        DateTime @default(now())
+  description String   // popis opravy
+  price       Float?   // cena opravy
+  note        String?  // poznámka
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  vehicle     Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@map("repairs")
+}
+
+model Route {
+  id           String   @id @default(cuid())
+  name         String
+  mapUrl       String?
+  plannedKm    Int?
+  actualKm     Int?
+  date         DateTime
+  note         String?
+  status         String   @default("PLANNED") // PLANNED, IN_PROGRESS, COMPLETED
+  confirmed      Boolean  @default(false) // Potvrzeno řidičem
+  complaintCount Int      @default(0)    // počet reklamací na trase
+  createdAt      DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  driverId     String?
+  driver       User?    @relation(fields: [driverId], references: [id], onDelete: SetNull)
+
+  vehicleId    String?
+  vehicle      Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+
+  @@map("routes")
+}
+
+model NoteCategory {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  notes     Note[]
+
+  @@map("note_categories")
+}
+
+model DriverReview {
+  id        String   @id @default(cuid())
+  driverId  String
+  type      String   // "up" nebo "down"
+  note      String?  // volitelná poznámka
+  createdAt DateTime @default(now())
+
+  driver    User     @relation(fields: [driverId], references: [id], onDelete: Cascade)
+
+  @@map("driver_reviews")
+}
+
+model Note {
+  id         String       @id @default(cuid())
+  text       String
+  categoryId String
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  category   NoteCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@map("notes")
+}
