@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -31,12 +32,13 @@ export async function GET() {
         name: true,
         email: true,
         color: true,
-        rating: true,
+        ratingUp: true,
+        ratingDown: true,
       },
       orderBy: { name: 'asc' },
     });
 
-    // Načíst všechny trasy najednou (efektivnější než dotazovat pro každého řidiče)
+    // Načíst všechny trasy najednou
     const allRoutes = await prisma.route.findMany({
       where: {
         driverId: { in: drivers.map(d => d.id) },
@@ -66,7 +68,7 @@ export async function GET() {
         return routeDate >= monthStart && routeDate <= monthEnd;
       });
 
-      // Celkové km (pouze z dokončených tras s actualKm)
+      // Celkové km
       const totalKm = driverRoutes.reduce((sum, r) => sum + (r.actualKm || 0), 0);
       const monthlyKm = monthlyRoutes.reduce((sum, r) => sum + (r.actualKm || 0), 0);
 
@@ -76,9 +78,12 @@ export async function GET() {
 
       // Průměrné km na jízdu
       const tripsWithKm = driverRoutes.filter(r => r.actualKm && r.actualKm > 0);
-      const averageKm = tripsWithKm.length > 0
-        ? Math.round(tripsWithKm.reduce((sum, r) => sum + (r.actualKm || 0), 0) / tripsWithKm.length)
-        : 0;
+      const averageKm =
+        tripsWithKm.length > 0
+          ? Math.round(
+              tripsWithKm.reduce((sum, r) => sum + (r.actualKm || 0), 0) / tripsWithKm.length
+            )
+          : 0;
 
       // Používaná vozidla
       const vehicleMap = new Map<string, { spz: string; name: string; trips: number }>();
@@ -101,6 +106,9 @@ export async function GET() {
       // Reklamace
       const complaintCount = driverRoutes.reduce((sum, r) => sum + (r.complaintCount || 0), 0);
 
+      // Rating (saldo)
+      const rating = (driver.ratingUp || 0) - (driver.ratingDown || 0);
+
       return {
         id: driver.id,
         name: driver.name,
@@ -114,7 +122,9 @@ export async function GET() {
           monthlyTrips,
           vehicles,
           complaintCount,
-          rating: driver.rating,
+          rating,                 // saldo
+          ratingUp: driver.ratingUp,
+          ratingDown: driver.ratingDown,
         },
       };
     });
@@ -125,9 +135,6 @@ export async function GET() {
     return NextResponse.json({ drivers: driversWithStats });
   } catch (error) {
     console.error('Chyba při načítání statistik:', error);
-    return NextResponse.json(
-      { error: 'Chyba serveru' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Chyba serveru' }, { status: 500 });
   }
 }
