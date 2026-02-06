@@ -73,6 +73,15 @@ export default function VehiclesPage() {
   const [dateModal, setDateModal] = useState<{ vehicle: Vehicle; type: 'technical' | 'brakeFluid' | 'greenCard' | 'fridex' } | null>(null);
   const [dateValue, setDateValue] = useState('');
 
+  // Potvrzovací modal pro reset
+  const [resetConfirm, setResetConfirm] = useState<{
+    vehicleId: string;
+    vehicleName: string;
+    type: 'oil' | 'adblue' | 'brakes' | 'bearings' | 'brakeFluid';
+    label: string;
+  } | null>(null);
+  const [isResetting, setIsResetting] = useState(false);
+
   // Rozbalená karta
   const [expandedVehicle, setExpandedVehicle] = useState<string | null>(null);
 
@@ -182,21 +191,32 @@ export default function VehiclesPage() {
     });
   };
 
-  const handleReset = async (vehicleId: string, type: 'oil' | 'adblue' | 'brakes' | 'bearings' | 'brakeFluid') => {
-    const labels: Record<string, string> = {
-      oil: 'oleje',
-      adblue: 'AdBlue',
-      brakes: 'brzd',
-      bearings: 'ložisek',
-      brakeFluid: 'brzdové kapaliny',
-    };
-    if (!confirm(`Opravdu chcete resetovat počítadlo ${labels[type]}?`)) return;
+  const resetLabels: Record<string, string> = {
+    oil: 'oleje',
+    adblue: 'AdBlue',
+    brakes: 'brzd',
+    bearings: 'ložisek',
+    brakeFluid: 'brzdové kapaliny',
+  };
+
+  const handleReset = (vehicleId: string, vehicleName: string, type: 'oil' | 'adblue' | 'brakes' | 'bearings' | 'brakeFluid') => {
+    setResetConfirm({
+      vehicleId,
+      vehicleName,
+      type,
+      label: resetLabels[type],
+    });
+  };
+
+  const confirmReset = async () => {
+    if (!resetConfirm) return;
+    setIsResetting(true);
 
     try {
-      const response = await fetch(`/api/vehicles/${vehicleId}/maintenance`, {
+      const response = await fetch(`/api/vehicles/${resetConfirm.vehicleId}/maintenance`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'reset', type }),
+        body: JSON.stringify({ action: 'reset', type: resetConfirm.type }),
       });
 
       if (response.ok) {
@@ -204,6 +224,9 @@ export default function VehiclesPage() {
       }
     } catch (error) {
       console.error('Chyba při resetování počítadla:', error);
+    } finally {
+      setIsResetting(false);
+      setResetConfirm(null);
     }
   };
 
@@ -878,31 +901,31 @@ export default function VehiclesPage() {
                   {/* Tlačítka pro reset */}
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
                     <button
-                      onClick={() => handleReset(vehicle.id, 'oil')}
+                      onClick={() => handleReset(vehicle.id, vehicle.name, 'oil')}
                       className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm transition-colors"
                     >
                       🛢️ Reset oleje
                     </button>
                     <button
-                      onClick={() => handleReset(vehicle.id, 'adblue')}
+                      onClick={() => handleReset(vehicle.id, vehicle.name, 'adblue')}
                       className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm transition-colors"
                     >
                       💧 Reset AdBlue
                     </button>
                     <button
-                      onClick={() => handleReset(vehicle.id, 'brakes')}
+                      onClick={() => handleReset(vehicle.id, vehicle.name, 'brakes')}
                       className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm transition-colors"
                     >
                       🛑 Reset brzd
                     </button>
                     <button
-                      onClick={() => handleReset(vehicle.id, 'bearings')}
+                      onClick={() => handleReset(vehicle.id, vehicle.name, 'bearings')}
                       className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm transition-colors"
                     >
                       ⚙️ Reset ložisek
                     </button>
                     <button
-                      onClick={() => handleReset(vehicle.id, 'brakeFluid')}
+                      onClick={() => handleReset(vehicle.id, vehicle.name, 'brakeFluid')}
                       className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm transition-colors"
                     >
                       💦 Brzd. kap. vyměněna
@@ -1106,6 +1129,45 @@ export default function VehiclesPage() {
                 className="btn-primary flex-1"
               >
                 Uložit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Potvrzovací modal pro reset */}
+      {resetConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-2xl">
+                ⚠️
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Potvrdit reset
+                </h3>
+                <p className="text-sm text-gray-500">{resetConfirm.vehicleName}</p>
+              </div>
+            </div>
+            <p className="text-gray-700 mb-6">
+              Opravdu chcete resetovat počítadlo <strong>{resetConfirm.label}</strong>?
+              Tato akce vynuluje aktuální km a nastaví nové datum resetu.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setResetConfirm(null)}
+                className="btn-secondary flex-1"
+                disabled={isResetting}
+              >
+                Zrušit
+              </button>
+              <button
+                onClick={confirmReset}
+                disabled={isResetting}
+                className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700 transition-colors disabled:opacity-50"
+              >
+                {isResetting ? 'Resetuji...' : 'Ano, resetovat'}
               </button>
             </div>
           </div>

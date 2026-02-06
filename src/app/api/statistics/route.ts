@@ -15,18 +15,17 @@ export async function GET() {
       return NextResponse.json({ error: 'Neautorizováno' }, { status: 401 });
     }
 
-    // Kontrola role - pouze dispečer nebo admin
-    if (session.user.role !== 'DISPATCHER' && session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Nedostatečná oprávnění' }, { status: 403 });
-    }
-
     const now = new Date();
     const monthStart = startOfMonth(now);
     const monthEnd = endOfMonth(now);
 
-    // Načíst všechny řidiče
+    // Řidič vidí jen své statistiky, dispečer vidí všechny
+    const isDriver = session.user.role === 'DRIVER';
+    const driverFilter = isDriver ? { role: 'DRIVER' as const, id: session.user.id } : { role: 'DRIVER' as const };
+
+    // Načíst řidiče
     const drivers = await prisma.user.findMany({
-      where: { role: 'DRIVER' },
+      where: driverFilter,
       select: {
         id: true,
         name: true,

@@ -71,6 +71,7 @@ export function Header() {
               <>
                 <NavLink href="/ridic">Dostupnost</NavLink>
                 <NavLink href="/ridic/trasy">Moje trasy</NavLink>
+                <NavLink href="/ridic/statistiky">Statistiky</NavLink>
               </>
             )}
           </nav>
