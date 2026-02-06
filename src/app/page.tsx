@@ -9,6 +9,10 @@ export default async function Home() {
     redirect('/prihlaseni');
   }
 
-  // Přesměrování na dispečera (jediný přihlášený uživatel)
+  // Přesměrování dle role
+  if (session.user.role === 'DRIVER') {
+    redirect('/ridic');
+  }
+
   redirect('/dispecer');
 }

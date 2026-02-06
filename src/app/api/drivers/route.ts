@@ -3,6 +3,7 @@ export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import bcrypt from 'bcryptjs';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
@@ -22,11 +23,18 @@ export async function GET() {
         name: true,
         email: true,
         color: true,
+        ratingUp: true,
+        ratingDown: true,
       },
       orderBy: { name: 'asc' },
     });
 
-    return NextResponse.json(drivers);
+    const driversWithRating = drivers.map(d => ({
+      ...d,
+      rating: d.ratingUp - d.ratingDown,
+    }));
+
+    return NextResponse.json(driversWithRating);
   } catch (error) {
     console.error('Chyba při načítání řidičů:', error);
     return NextResponse.json(
@@ -51,7 +59,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { name, color } = body;
+    const { name, color, password } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -60,15 +68,24 @@ export async function POST(request: Request) {
       );
     }
 
+    if (!password) {
+      return NextResponse.json(
+        { error: 'Heslo je povinné' },
+        { status: 400 }
+      );
+    }
+
     // Generovat unikátní email pro řidiče (interní identifikátor)
     const slug = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-');
     const email = `${slug}-${Date.now()}@ridic.aza.cz`;
+
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const driver = await prisma.user.create({
       data: {
         name,
         email,
-        password: '', // Řidiči se nepřihlašují
+        password: hashedPassword,
         role: 'DRIVER',
         color: color || null,
       },

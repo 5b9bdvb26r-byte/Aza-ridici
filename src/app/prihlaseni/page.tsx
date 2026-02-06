@@ -7,7 +7,7 @@ import Image from 'next/image';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
+  const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [signingIn, setSigningIn] = useState(false);
@@ -19,7 +19,7 @@ export default function LoginPage() {
 
     try {
       const result = await signIn('credentials', {
-        email,
+        login,
         password,
         redirect: false,
       });
@@ -28,9 +28,9 @@ export default function LoginPage() {
         router.push('/');
         router.refresh();
       } else {
-        setError('Nesprávný email nebo heslo');
+        setError('Nesprávné přihlašovací údaje');
       }
-    } catch (error) {
+    } catch {
       setError('Chyba při přihlašování');
     } finally {
       setSigningIn(false);
@@ -58,17 +58,17 @@ export default function LoginPage() {
 
         <form onSubmit={handleLogin} className="mt-8 space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              Email
+            <label htmlFor="login" className="block text-sm font-medium text-gray-700">
+              Jméno nebo email
             </label>
             <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              id="login"
+              type="text"
+              value={login}
+              onChange={(e) => setLogin(e.target.value)}
               required
               className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-lg"
-              placeholder="dispecer@aza.cz"
+              placeholder="Petr nebo dispecer@aza.cz"
             />
           </div>
 

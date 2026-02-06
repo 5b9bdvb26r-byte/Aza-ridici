@@ -1,0 +1,415 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { format, isToday, isBefore, startOfDay } from 'date-fns';
+import { cs } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
+
+interface Vehicle {
+  id: string;
+  name: string;
+  spz: string;
+}
+
+interface Route {
+  id: string;
+  name: string;
+  mapUrl: string | null;
+  plannedKm: number | null;
+  actualKm: number | null;
+  date: string;
+  note: string | null;
+  status: string;
+  confirmed: boolean;
+  complaintCount: number;
+  vehicle: Vehicle | null;
+  dailyReport?: DailyReport | null;
+}
+
+interface DailyReport {
+  id: string;
+  routeId: string;
+  actualKm: number;
+  carCheck: string;
+  carCheckNote: string | null;
+}
+
+export default function DriverRoutesPage() {
+  const [routes, setRoutes] = useState<Route[]>([]);
+  const [reports, setReports] = useState<DailyReport[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Denní formulář
+  const [activeReport, setActiveReport] = useState<string | null>(null);
+  const [reportForm, setReportForm] = useState({
+    actualKm: '',
+    carCheck: 'OK',
+    carCheckNote: '',
+  });
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
+
+  useEffect(() => {
+    Promise.all([fetchRoutes(), fetchReports()]).then(() => setIsLoading(false));
+  }, []);
+
+  const fetchRoutes = async () => {
+    try {
+      const response = await fetch('/api/routes');
+      if (response.ok) {
+        const data = await response.json();
+        setRoutes(data);
+      }
+    } catch (error) {
+      console.error('Chyba při načítání tras:', error);
+    }
+  };
+
+  const fetchReports = async () => {
+    try {
+      const response = await fetch('/api/daily-reports');
+      if (response.ok) {
+        const data = await response.json();
+        setReports(data);
+      }
+    } catch (error) {
+      console.error('Chyba při načítání reportů:', error);
+    }
+  };
+
+  const hasReport = (routeId: string) => {
+    return reports.some((r) => r.routeId === routeId);
+  };
+
+  const getReport = (routeId: string) => {
+    return reports.find((r) => r.routeId === routeId);
+  };
+
+  const handleOpenReport = (route: Route) => {
+    setActiveReport(route.id);
+    setReportForm({
+      actualKm: route.plannedKm?.toString() || '',
+      carCheck: 'OK',
+      carCheckNote: '',
+    });
+    setSaveError(null);
+    setSaveSuccess(null);
+  };
+
+  const handleSubmitReport = async () => {
+    if (!activeReport) return;
+    setIsSaving(true);
+    setSaveError(null);
+
+    try {
+      const response = await fetch('/api/daily-reports', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          routeId: activeReport,
+          actualKm: reportForm.actualKm,
+          carCheck: reportForm.carCheck,
+          carCheckNote: reportForm.carCheck === 'NOK' ? reportForm.carCheckNote : null,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Chyba při odesílání reportu');
+      }
+
+      setSaveSuccess('Report úspěšně odeslán');
+      setActiveReport(null);
+      await Promise.all([fetchRoutes(), fetchReports()]);
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : 'Neznámá chyba');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Rozdělit trasy
+  const today = startOfDay(new Date());
+  const needsReport = routes.filter((r) => {
+    const routeDate = startOfDay(new Date(r.date));
+    const isPastOrToday = isBefore(routeDate, today) || isToday(new Date(r.date));
+    return isPastOrToday && !hasReport(r.id) && r.status !== 'COMPLETED';
+  });
+
+  const upcomingRoutes = routes.filter((r) => {
+    const routeDate = startOfDay(new Date(r.date));
+    return !isBefore(routeDate, today) && !isToday(new Date(r.date));
+  });
+
+  const completedRoutes = routes.filter((r) => r.status === 'COMPLETED' || hasReport(r.id));
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">Načítání...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-900">Moje trasy</h1>
+        <p className="text-gray-600 mt-1">Přehled vašich tras a denní reporty</p>
+      </div>
+
+      {saveSuccess && (
+        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700">
+          {saveSuccess}
+        </div>
+      )}
+
+      {/* Trasy vyžadující report */}
+      {needsReport.length > 0 && (
+        <div className="card mb-6 border-2 border-orange-200 bg-orange-50/30">
+          <h2 className="text-lg font-semibold text-orange-800 mb-4">
+            K vyplnění ({needsReport.length})
+          </h2>
+          <div className="space-y-3">
+            {needsReport.map((route) => (
+              <div key={route.id}>
+                <div className="flex items-center gap-4 p-4 bg-white rounded-lg border border-orange-200">
+                  <div className="text-center min-w-[60px]">
+                    <div className="text-2xl font-bold text-gray-900">
+                      {format(new Date(route.date), 'd')}
+                    </div>
+                    <div className="text-xs text-gray-500 uppercase">
+                      {format(new Date(route.date), 'MMM', { locale: cs })}
+                    </div>
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-gray-900">{route.name}</div>
+                    <div className="flex items-center gap-3 text-sm text-gray-500 mt-1">
+                      {route.vehicle && <span>{route.vehicle.name} ({route.vehicle.spz})</span>}
+                      {route.plannedKm && <span>Plan: {route.plannedKm} km</span>}
+                    </div>
+                    {route.mapUrl && (
+                      <a
+                        href={route.mapUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-primary-600 hover:underline"
+                      >
+                        Mapa
+                      </a>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={() => handleOpenReport(route)}
+                    className="btn-primary text-sm"
+                  >
+                    Vyplnit report
+                  </button>
+                </div>
+
+                {/* Denní formulář */}
+                {activeReport === route.id && (
+                  <div className="mt-2 p-4 bg-white rounded-lg border-2 border-primary-200">
+                    <h3 className="font-semibold text-gray-900 mb-4">
+                      Denní report - {route.name}
+                    </h3>
+
+                    {saveError && (
+                      <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                        {saveError}
+                      </div>
+                    )}
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Skutečně ujeté km
+                        </label>
+                        <input
+                          type="number"
+                          value={reportForm.actualKm}
+                          onChange={(e) => setReportForm({ ...reportForm, actualKm: e.target.value })}
+                          className="input w-full"
+                          placeholder={route.plannedKm?.toString() || '0'}
+                          min="0"
+                        />
+                        {route.plannedKm && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            Plánováno: {route.plannedKm} km
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Kontrola auta
+                        </label>
+                        <div className="flex gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setReportForm({ ...reportForm, carCheck: 'OK' })}
+                            className={cn(
+                              'flex-1 p-3 rounded-lg border-2 text-center font-medium transition-all',
+                              reportForm.carCheck === 'OK'
+                                ? 'border-green-500 bg-green-50 text-green-700'
+                                : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                            )}
+                          >
+                            OK
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setReportForm({ ...reportForm, carCheck: 'NOK' })}
+                            className={cn(
+                              'flex-1 p-3 rounded-lg border-2 text-center font-medium transition-all',
+                              reportForm.carCheck === 'NOK'
+                                ? 'border-red-500 bg-red-50 text-red-700'
+                                : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                            )}
+                          >
+                            NOK
+                          </button>
+                        </div>
+                      </div>
+
+                      {reportForm.carCheck === 'NOK' && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Popis problému
+                          </label>
+                          <textarea
+                            value={reportForm.carCheckNote}
+                            onChange={(e) => setReportForm({ ...reportForm, carCheckNote: e.target.value })}
+                            className="input w-full min-h-[80px]"
+                            placeholder="Popište zjištěný problém..."
+                          />
+                        </div>
+                      )}
+
+                      <div className="flex gap-3 pt-2">
+                        <button
+                          onClick={() => setActiveReport(null)}
+                          className="btn-secondary flex-1"
+                        >
+                          Zrušit
+                        </button>
+                        <button
+                          onClick={handleSubmitReport}
+                          disabled={isSaving || !reportForm.actualKm}
+                          className="btn-primary flex-1"
+                        >
+                          {isSaving ? 'Odesílám...' : 'Odeslat report'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Nadcházející trasy */}
+      {upcomingRoutes.length > 0 && (
+        <div className="card mb-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            Nadcházející ({upcomingRoutes.length})
+          </h2>
+          <div className="space-y-3">
+            {upcomingRoutes.map((route) => (
+              <div key={route.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+                <div className="text-center min-w-[60px]">
+                  <div className="text-2xl font-bold text-gray-900">
+                    {format(new Date(route.date), 'd')}
+                  </div>
+                  <div className="text-xs text-gray-500 uppercase">
+                    {format(new Date(route.date), 'MMM', { locale: cs })}
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-gray-900">{route.name}</div>
+                  <div className="flex items-center gap-3 text-sm text-gray-500 mt-1">
+                    {route.vehicle && <span>{route.vehicle.name} ({route.vehicle.spz})</span>}
+                    {route.plannedKm && <span>Plan: {route.plannedKm} km</span>}
+                  </div>
+                  {route.mapUrl && (
+                    <a
+                      href={route.mapUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-primary-600 hover:underline"
+                    >
+                      Mapa
+                    </a>
+                  )}
+                </div>
+                <span className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium">
+                  {format(new Date(route.date), 'EEEE', { locale: cs })}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Dokončené */}
+      {completedRoutes.length > 0 && (
+        <div className="card bg-gray-50">
+          <h2 className="text-lg font-semibold text-gray-700 mb-4">
+            Dokončené ({completedRoutes.length})
+          </h2>
+          <div className="space-y-3">
+            {completedRoutes.map((route) => {
+              const report = getReport(route.id);
+              return (
+                <div key={route.id} className="flex items-center gap-4 p-4 bg-white rounded-lg border border-gray-200">
+                  <div className="text-center min-w-[60px]">
+                    <div className="text-2xl font-bold text-gray-400">
+                      {format(new Date(route.date), 'd')}
+                    </div>
+                    <div className="text-xs text-gray-400 uppercase">
+                      {format(new Date(route.date), 'MMM', { locale: cs })}
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-gray-600">{route.name}</div>
+                    <div className="flex items-center gap-3 text-sm text-gray-400 mt-1">
+                      {route.vehicle && <span>{route.vehicle.name}</span>}
+                      <span>{route.actualKm || route.plannedKm || 0} km</span>
+                      {report && (
+                        <span className={cn(
+                          'px-2 py-0.5 rounded-full text-xs font-bold',
+                          report.carCheck === 'OK'
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-red-100 text-red-700'
+                        )}>
+                          Auto: {report.carCheck}
+                        </span>
+                      )}
+                      {report?.carCheckNote && (
+                        <span className="text-red-500 text-xs">{report.carCheckNote}</span>
+                      )}
+                    </div>
+                  </div>
+                  <span className="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-sm font-medium">
+                    Hotovo
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {routes.length === 0 && (
+        <div className="card py-12 text-center text-gray-500">
+          Žádné přiřazené trasy
+        </div>
+      )}
+    </div>
+  );
+}

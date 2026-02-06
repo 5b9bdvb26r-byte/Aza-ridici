@@ -32,12 +32,13 @@ export default function DriversManagement() {
   const [newDriver, setNewDriver] = useState({
     name: '',
     color: '#3B82F6',
+    password: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Editace řidiče
   const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
-  const [editForm, setEditForm] = useState({ name: '', color: '' });
+  const [editForm, setEditForm] = useState({ name: '', color: '', password: '' });
 
   // Mazání řidiče
   const [deletingDriver, setDeletingDriver] = useState<Driver | null>(null);
@@ -84,7 +85,7 @@ export default function DriversManagement() {
 
       await fetchDrivers();
       setShowAddForm(false);
-      setNewDriver({ name: '', color: '#3B82F6' });
+      setNewDriver({ name: '', color: '#3B82F6', password: '' });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Neznámá chyba');
     } finally {
@@ -100,10 +101,18 @@ export default function DriversManagement() {
     setError(null);
 
     try {
+      const payload: Record<string, string> = {
+        name: editForm.name,
+        color: editForm.color,
+      };
+      if (editForm.password) {
+        payload.password = editForm.password;
+      }
+
       const response = await fetch(`/api/drivers/${editingDriver.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editForm),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -173,6 +182,7 @@ export default function DriversManagement() {
     setEditForm({
       name: driver.name,
       color: driver.color || '#3B82F6',
+      password: '',
     });
   };
 
@@ -234,6 +244,8 @@ export default function DriversManagement() {
                   <div>
                     <div className="font-medium text-gray-900 text-lg">{driver.name}</div>
                     <div className="text-sm text-gray-500">
+                      Přihlášení: <span className="text-gray-700">{driver.name}</span>
+                      {' '}&bull;{' '}
                       Hodnocení:{' '}
                       <span className={`font-bold ${
                         driver.rating > 0 ? 'text-green-600' :
@@ -309,7 +321,7 @@ export default function DriversManagement() {
             <form onSubmit={handleAddDriver} className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Jméno řidiče
+                  Jméno řidiče (slouží i pro přihlášení)
                 </label>
                 <input
                   type="text"
@@ -318,6 +330,20 @@ export default function DriversManagement() {
                   onChange={(e) => setNewDriver({ ...newDriver, name: e.target.value })}
                   className="input"
                   placeholder="např. Petr, Dan, Hára..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Heslo pro přihlášení
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newDriver.password}
+                  onChange={(e) => setNewDriver({ ...newDriver, password: e.target.value })}
+                  className="input"
+                  placeholder="Zadejte heslo"
                 />
               </div>
 
@@ -391,7 +417,7 @@ export default function DriversManagement() {
             <form onSubmit={handleUpdateDriver} className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Jméno řidiče
+                  Jméno řidiče (slouží i pro přihlášení)
                 </label>
                 <input
                   type="text"
@@ -400,6 +426,22 @@ export default function DriversManagement() {
                   onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
                   className="input"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nové heslo
+                </label>
+                <input
+                  type="text"
+                  value={editForm.password}
+                  onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
+                  className="input"
+                  placeholder="Ponechte prázdné pro zachování stávajícího"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Vyplňte pouze pokud chcete změnit heslo
+                </p>
               </div>
 
               <div>

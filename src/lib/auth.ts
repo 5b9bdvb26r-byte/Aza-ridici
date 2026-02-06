@@ -8,25 +8,40 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
-        email: { label: 'Email', type: 'email' },
+        login: { label: 'Jméno nebo email', type: 'text' },
         password: { label: 'Heslo', type: 'password' },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error('Zadejte email a heslo');
+        if (!credentials?.login || !credentials?.password) {
+          throw new Error('Zadejte jméno/email a heslo');
         }
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-        });
+        const login = credentials.login.trim();
+        let user;
+
+        if (login.includes('@')) {
+          // Přihlášení emailem (dispečer)
+          user = await prisma.user.findUnique({
+            where: { email: login },
+          });
+        } else {
+          // Přihlášení jménem (řidič)
+          user = await prisma.user.findFirst({
+            where: { name: login, role: 'DRIVER' },
+          });
+        }
 
         if (!user) {
-          throw new Error('Nesprávný email nebo heslo');
+          throw new Error('Nesprávné přihlašovací údaje');
+        }
+
+        if (!user.password) {
+          throw new Error('Účet nemá nastavené heslo');
         }
 
         const isValid = await bcrypt.compare(credentials.password, user.password);
         if (!isValid) {
-          throw new Error('Nesprávný email nebo heslo');
+          throw new Error('Nesprávné přihlašovací údaje');
         }
 
         return {

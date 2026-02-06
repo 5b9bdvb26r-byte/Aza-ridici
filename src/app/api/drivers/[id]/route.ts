@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import bcrypt from 'bcryptjs';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
@@ -22,7 +23,7 @@ export async function PUT(
 
     const { id } = await params;
     const body = await request.json();
-    const { name, color } = body;
+    const { name, color, password } = body;
 
     // Kontrola, zda řidič existuje
     const existingDriver = await prisma.user.findUnique({
@@ -37,12 +38,16 @@ export async function PUT(
       return NextResponse.json({ error: 'Nelze upravit tohoto uživatele' }, { status: 400 });
     }
 
+    const updateData: Record<string, unknown> = {};
+    if (name !== undefined) updateData.name = name;
+    if (color !== undefined) updateData.color = color;
+    if (password) {
+      updateData.password = await bcrypt.hash(password, 10);
+    }
+
     const updatedDriver = await prisma.user.update({
       where: { id },
-      data: {
-        ...(name !== undefined && { name }),
-        ...(color !== undefined && { color }),
-      },
+      data: updateData,
       select: {
         id: true,
         name: true,

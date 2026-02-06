@@ -22,6 +22,7 @@ model User {
   availability  Availability[]
   routes        Route[]
   reviews       DriverReview[]
+  dailyReports  DailyReport[]
 
   @@map("users")
 }
@@ -125,6 +126,8 @@ model Route {
   vehicleId    String?
   vehicle      Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
 
+  dailyReport  DailyReport?
+
   @@map("routes")
 }
 
@@ -160,4 +163,20 @@ model Note {
   category   NoteCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@map("notes")
+}
+
+model DailyReport {
+  id           String   @id @default(cuid())
+  routeId      String   @unique
+  driverId     String
+  actualKm     Int
+  carCheck     String   @default("OK")
+  carCheckNote String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  route        Route    @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  driver       User     @relation(fields: [driverId], references: [id], onDelete: Cascade)
+
+  @@map("daily_reports")
 }
