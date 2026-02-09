@@ -23,6 +23,8 @@ interface DriverStats {
     vehicles: VehicleStats[];
     complaintCount: number;
     rating: number;
+    ratingUp: number;
+    ratingDown: number;
   };
 }
 
@@ -125,9 +127,11 @@ export default function DriverStatisticsPage() {
           </div>
           <div className="text-sm text-gray-500">Jízd tento měsíc</div>
         </div>
-        <div className={`card text-center ${stats.rating >= 0 ? 'bg-green-50' : 'bg-red-50'}`}>
-          <div className={`text-3xl font-bold ${stats.rating >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-            {stats.rating > 0 ? '+' : ''}{stats.rating}
+        <div className="card text-center">
+          <div className="text-3xl font-bold">
+            <span className="text-green-600">+{stats.ratingUp || 0}</span>
+            {' / '}
+            <span className="text-red-600">-{stats.ratingDown || 0}</span>
           </div>
           <div className="text-sm text-gray-500">Hodnocení</div>
         </div>

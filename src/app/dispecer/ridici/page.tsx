@@ -7,7 +7,8 @@ interface Driver {
   name: string;
   email: string;
   color: string | null;
-  rating: number;
+  ratingUp: number;
+  ratingDown: number;
 }
 
 // Předdefinované barvy pro rychlý výběr
@@ -42,6 +43,9 @@ export default function DriversManagement() {
 
   // Mazání řidiče
   const [deletingDriver, setDeletingDriver] = useState<Driver | null>(null);
+
+  // Reset hodnocení
+  const [resetRatingDriver, setResetRatingDriver] = useState<Driver | null>(null);
 
   // Hodnocení - loading state pro tlačítka
   const [ratingLoading, setRatingLoading] = useState<string | null>(null);
@@ -165,15 +169,44 @@ export default function DriversManagement() {
 
       if (response.ok) {
         const updated = await response.json();
-        // Aktualizovat rating lokálně bez refetche
         setDrivers(prev => prev.map(d =>
-          d.id === driverId ? { ...d, rating: updated.rating } : d
+          d.id === driverId
+            ? { ...d, ratingUp: updated.ratingUp, ratingDown: updated.ratingDown }
+            : d
         ));
       }
     } catch (err) {
       console.error('Chyba při úpravě hodnocení:', err);
     } finally {
       setRatingLoading(null);
+    }
+  };
+
+  const handleResetRating = async () => {
+    if (!resetRatingDriver) return;
+
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/drivers/${resetRatingDriver.id}/reviews`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        const updated = await response.json();
+        setDrivers(prev => prev.map(d =>
+          d.id === resetRatingDriver.id
+            ? { ...d, ratingUp: updated.ratingUp, ratingDown: updated.ratingDown }
+            : d
+        ));
+      }
+
+      setResetRatingDriver(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Neznámá chyba');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -196,7 +229,7 @@ export default function DriversManagement() {
 
   return (
     <div>
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Správa řidičů</h1>
           <p className="text-gray-600 mt-1">
@@ -205,7 +238,7 @@ export default function DriversManagement() {
         </div>
         <button
           onClick={() => setShowAddForm(true)}
-          className="btn-primary"
+          className="btn-primary w-full sm:w-auto"
         >
           + Přidat řidiče
         </button>
@@ -232,64 +265,89 @@ export default function DriversManagement() {
             {drivers.map((driver) => (
               <div
                 key={driver.id}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                className="p-3 sm:p-4 bg-gray-50 rounded-lg"
               >
-                <div className="flex items-center gap-4">
+                {/* Hlavní řádek - info a akce */}
+                <div className="flex items-center gap-3 sm:gap-4">
                   <div
                     className="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center text-white font-bold"
                     style={{ backgroundColor: driver.color || '#9CA3AF' }}
                   >
                     {driver.name.charAt(0).toUpperCase()}
                   </div>
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <div className="font-medium text-gray-900 text-lg">{driver.name}</div>
                     <div className="text-sm text-gray-500">
                       Přihlášení: <span className="text-gray-700">{driver.name}</span>
-                      {' '}&bull;{' '}
-                      Hodnocení:{' '}
-                      <span className={`font-bold ${
-                        driver.rating > 0 ? 'text-green-600' :
-                        driver.rating < 0 ? 'text-red-600' :
-                        'text-gray-500'
-                      }`}>
-                        {driver.rating > 0 ? '+' : ''}{driver.rating}
-                      </span>
                     </div>
                   </div>
+                  {/* Desktop akce */}
+                  <div className="hidden sm:flex items-center gap-2">
+                    <button
+                      onClick={() => startEdit(driver)}
+                      className="btn-secondary text-sm"
+                    >
+                      Upravit
+                    </button>
+                    <button
+                      onClick={() => setDeletingDriver(driver)}
+                      className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                    >
+                      Smazat
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleRating(driver.id, 'down')}
-                    disabled={ratingLoading === driver.id}
-                    className="px-3 py-1.5 flex items-center gap-1 bg-red-100 text-red-700 rounded-lg text-sm font-medium hover:bg-red-200 transition-colors disabled:opacity-50"
-                    title="Hodnocení −1"
-                  >
-                    👎 −
-                  </button>
-                  <span className={`w-10 text-center font-bold text-lg ${
-                    driver.rating > 0 ? 'text-green-600' :
-                    driver.rating < 0 ? 'text-red-600' :
-                    'text-gray-400'
-                  }`}>
-                    {driver.rating > 0 ? '+' : ''}{driver.rating}
-                  </span>
+
+                {/* Hodnocení řádek */}
+                <div className="mt-3 pt-3 border-t border-gray-200 flex flex-wrap items-center gap-2">
                   <button
                     onClick={() => handleRating(driver.id, 'up')}
                     disabled={ratingLoading === driver.id}
                     className="px-3 py-1.5 flex items-center gap-1 bg-green-100 text-green-700 rounded-lg text-sm font-medium hover:bg-green-200 transition-colors disabled:opacity-50"
-                    title="Hodnocení +1"
+                    title="Pozitivní hodnocení"
                   >
-                    👍 +
+                    +
                   </button>
                   <button
+                    onClick={() => handleRating(driver.id, 'down')}
+                    disabled={ratingLoading === driver.id}
+                    className="px-3 py-1.5 flex items-center gap-1 bg-red-100 text-red-700 rounded-lg text-sm font-medium hover:bg-red-200 transition-colors disabled:opacity-50"
+                    title="Negativní hodnocení"
+                  >
+                    -
+                  </button>
+
+                  <div className="flex items-center gap-3 ml-2">
+                    <span className="text-green-600 font-bold text-sm">
+                      +{driver.ratingUp}
+                    </span>
+                    <span className="text-red-600 font-bold text-sm">
+                      -{driver.ratingDown}
+                    </span>
+                  </div>
+
+                  {(driver.ratingUp > 0 || driver.ratingDown > 0) && (
+                    <button
+                      onClick={() => setResetRatingDriver(driver)}
+                      className="ml-auto px-3 py-1.5 bg-gray-200 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors"
+                      title="Reset hodnocení po vyplacení"
+                    >
+                      Reset
+                    </button>
+                  )}
+                </div>
+
+                {/* Mobilní akce */}
+                <div className="mt-3 pt-3 border-t border-gray-200 flex gap-2 sm:hidden">
+                  <button
                     onClick={() => startEdit(driver)}
-                    className="btn-secondary text-sm ml-2"
+                    className="btn-secondary text-sm flex-1"
                   >
                     Upravit
                   </button>
                   <button
                     onClick={() => setDeletingDriver(driver)}
-                    className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                    className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors flex-1"
                   >
                     Smazat
                   </button>
@@ -302,8 +360,8 @@ export default function DriversManagement() {
 
       {/* Modal - přidání řidiče */}
       {showAddForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+          <div className="bg-white rounded-t-xl sm:rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900">
@@ -398,8 +456,8 @@ export default function DriversManagement() {
 
       {/* Modal - editace řidiče */}
       {editingDriver && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+          <div className="bg-white rounded-t-xl sm:rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900">
@@ -495,8 +553,8 @@ export default function DriversManagement() {
 
       {/* Modal - potvrzení smazání */}
       {deletingDriver && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+          <div className="bg-white rounded-t-xl sm:rounded-xl shadow-xl max-w-md w-full p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               Smazat řidiče
             </h3>
@@ -517,6 +575,43 @@ export default function DriversManagement() {
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
               >
                 {isSubmitting ? 'Mazání...' : 'Smazat'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal - potvrzení resetu hodnocení */}
+      {resetRatingDriver && (
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+          <div className="bg-white rounded-t-xl sm:rounded-xl shadow-xl max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Reset hodnocení
+            </h3>
+            <p className="text-gray-600 mb-2">
+              Resetovat hodnocení řidiče <strong>{resetRatingDriver.name}</strong>?
+            </p>
+            <div className="mb-4 p-3 bg-gray-50 rounded-lg text-sm text-gray-600">
+              <div className="flex items-center gap-4 mb-1">
+                <span>Aktuální: <span className="text-green-600 font-bold">+{resetRatingDriver.ratingUp}</span> / <span className="text-red-600 font-bold">-{resetRatingDriver.ratingDown}</span></span>
+              </div>
+              <p className="text-xs text-gray-500">
+                Po resetu se obě hodnoty vynulují. Použijte po vyplacení bonusu nebo srážky.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setResetRatingDriver(null)}
+                className="btn-secondary flex-1"
+              >
+                Zrušit
+              </button>
+              <button
+                onClick={handleResetRating}
+                disabled={isSubmitting}
+                className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50"
+              >
+                {isSubmitting ? 'Resetuji...' : 'Resetovat'}
               </button>
             </div>
           </div>

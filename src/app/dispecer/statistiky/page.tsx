@@ -24,6 +24,8 @@ interface DriverStats {
     vehicles: VehicleStats[];
     complaintCount: number;
     rating: number;
+    ratingUp: number;
+    ratingDown: number;
   };
 }
 
@@ -63,9 +65,10 @@ export default function StatisticsPage() {
       totalTrips: acc.totalTrips + driver.stats.totalTrips,
       monthlyTrips: acc.monthlyTrips + driver.stats.monthlyTrips,
       complaintCount: acc.complaintCount + (driver.stats.complaintCount || 0),
-      totalRating: acc.totalRating + (driver.stats.rating || 0),
+      totalRatingUp: acc.totalRatingUp + (driver.stats.ratingUp || 0),
+      totalRatingDown: acc.totalRatingDown + (driver.stats.ratingDown || 0),
     }),
-    { totalKm: 0, monthlyKm: 0, totalTrips: 0, monthlyTrips: 0, complaintCount: 0, totalRating: 0 }
+    { totalKm: 0, monthlyKm: 0, totalTrips: 0, monthlyTrips: 0, complaintCount: 0, totalRatingUp: 0, totalRatingDown: 0 }
   );
 
   // Průměrná délka jízdy celkově
@@ -142,9 +145,11 @@ export default function StatisticsPage() {
           </div>
           <div className="text-sm text-gray-500">Celkem vyřízených reklamací</div>
         </div>
-        <div className={`card text-center ${totals.totalRating >= 0 ? 'bg-green-50' : 'bg-red-50'}`}>
-          <div className={`text-3xl font-bold ${totals.totalRating >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-            {totals.totalRating > 0 ? '+' : ''}{totals.totalRating}
+        <div className="card text-center">
+          <div className="text-3xl font-bold">
+            <span className="text-green-600">+{totals.totalRatingUp}</span>
+            {' / '}
+            <span className="text-red-600">-{totals.totalRatingDown}</span>
           </div>
           <div className="text-sm text-gray-500">Celkové hodnocení</div>
         </div>
@@ -182,13 +187,11 @@ export default function StatisticsPage() {
                   <div>
                     <div className="font-semibold text-gray-900 flex items-center gap-2">
                       {driver.name}
-                      {driver.stats.rating !== 0 && (
-                        <span className={`px-2 py-0.5 text-xs font-bold rounded-full ${
-                          driver.stats.rating > 0
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-red-100 text-red-700'
-                        }`}>
-                          {driver.stats.rating > 0 ? '+' : ''}{driver.stats.rating}
+                      {(driver.stats.ratingUp > 0 || driver.stats.ratingDown > 0) && (
+                        <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-gray-100">
+                          <span className="text-green-600">+{driver.stats.ratingUp}</span>
+                          {' / '}
+                          <span className="text-red-600">-{driver.stats.ratingDown}</span>
                         </span>
                       )}
                       {driver.stats.complaintCount > 0 && (
@@ -263,9 +266,11 @@ export default function StatisticsPage() {
                     </div>
                     <div className="text-sm text-gray-500">Vyřízených reklamací</div>
                   </div>
-                  <div className={`p-3 rounded-lg ${(driver.stats.rating || 0) >= 0 ? 'bg-green-50' : 'bg-red-50'}`}>
-                    <div className={`text-xl font-bold ${(driver.stats.rating || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {(driver.stats.rating || 0) > 0 ? '+' : ''}{driver.stats.rating || 0}
+                  <div className="p-3 rounded-lg bg-gray-50">
+                    <div className="text-xl font-bold">
+                      <span className="text-green-600">+{driver.stats.ratingUp || 0}</span>
+                      {' / '}
+                      <span className="text-red-600">-{driver.stats.ratingDown || 0}</span>
                     </div>
                     <div className="text-sm text-gray-500">Hodnocení</div>
                   </div>
