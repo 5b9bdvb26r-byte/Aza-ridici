@@ -16,6 +16,15 @@ export function Header() {
   const isDispatcher =
     session?.user?.role === 'DISPATCHER' || session?.user?.role === 'ADMIN';
 
+  // Auto-complete routes on page load (once per session)
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    const key = `autoComplete_${new Date().toDateString()}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, '1');
+    fetch('/api/routes/auto-complete', { method: 'POST' }).catch(() => {});
+  }, [session?.user?.id]);
+
   // Fetch NOK report count for dispatcher badge
   useEffect(() => {
     if (!isDispatcher) return;
@@ -141,6 +150,7 @@ export function Header() {
                 <NavLink href="/dispecer/ridici">Řidiči</NavLink>
                 <NavLink href="/dispecer/statistiky">Statistiky</NavLink>
                 <NavLink href="/dispecer/poznamky">Poznámky</NavLink>
+                <NavLink href="/dispecer/sklad">Sklad</NavLink>
                 <NavLink href="/dispecer/hlaseni" badge={nokCount}>Hlášení</NavLink>
               </>
             ) : (

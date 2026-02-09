@@ -85,8 +85,9 @@ model Vehicle {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  routes    Route[]
-  repairs   Repair[]
+  routes              Route[]
+  repairs             Repair[]
+  sparePartMovements  SparePartMovement[]
 
   @@map("vehicles")
 }
@@ -163,6 +164,36 @@ model Note {
   category   NoteCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@map("notes")
+}
+
+model SparePart {
+  id        String   @id @default(cuid())
+  name      String   // název dílu (např. "Brzdové destičky přední")
+  quantity  Int      @default(0) // aktuální množství na skladě
+  unit      String   @default("ks") // jednotka (ks, l, sada...)
+  minStock  Int      @default(0) // minimální stav pro upozornění
+  note      String?  // poznámka
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  movements SparePartMovement[]
+
+  @@map("spare_parts")
+}
+
+model SparePartMovement {
+  id          String   @id @default(cuid())
+  sparePartId String
+  type        String   // "IN" (příjem) nebo "OUT" (výdej)
+  quantity    Int      // množství
+  note        String?  // důvod / poznámka
+  vehicleId   String?  // na které auto byl díl použit (jen pro OUT)
+  createdAt   DateTime @default(now())
+
+  sparePart   SparePart @relation(fields: [sparePartId], references: [id], onDelete: Cascade)
+  vehicle     Vehicle?  @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+
+  @@map("spare_part_movements")
 }
 
 model DailyReport {

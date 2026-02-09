@@ -1,8 +1,24 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { startOfDay } from 'date-fns';
+
+// GET - Cron endpoint (volitelně bez autentizace pro automatické volání)
+export async function GET(request: NextRequest) {
+  // Povolit přístup z cron jobu nebo přihlášeným uživatelům
+  const cronSecret = request.headers.get('x-cron-secret');
+  const isValidCron = cronSecret === process.env.CRON_SECRET;
+
+  if (!isValidCron) {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Neautorizováno' }, { status: 401 });
+    }
+  }
+
+  return autoCompleteRoutes();
+}
 
 // POST - Automaticky dokončit trasy, které mají datum v minulosti
 export async function POST() {
@@ -13,11 +29,15 @@ export async function POST() {
       return NextResponse.json({ error: 'Neautorizováno' }, { status: 401 });
     }
 
-    // Pouze dispečer nebo admin
-    if (session.user.role !== 'DISPATCHER' && session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Nedostatečná oprávnění' }, { status: 403 });
-    }
+    return autoCompleteRoutes();
+  } catch (error) {
+    console.error('Chyba při automatickém dokončování tras:', error);
+    return NextResponse.json({ error: 'Chyba serveru' }, { status: 500 });
+  }
+}
 
+async function autoCompleteRoutes() {
+  try {
     const today = startOfDay(new Date());
 
     // Najít všechny trasy, které:
