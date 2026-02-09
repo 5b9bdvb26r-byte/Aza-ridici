@@ -174,40 +174,44 @@ export default function DriverRoutesPage() {
           <div className="space-y-3">
             {needsReport.map((route) => (
               <div key={route.id}>
-                <div className="flex items-center gap-4 p-4 bg-white rounded-lg border border-orange-200">
-                  <div className="text-center min-w-[60px]">
-                    <div className="text-2xl font-bold text-gray-900">
-                      {format(new Date(route.date), 'd')}
+                <div className="p-3 sm:p-4 bg-white rounded-lg border border-orange-200">
+                  <div className="flex items-start gap-3 sm:gap-4">
+                    <div className="text-center min-w-[45px] sm:min-w-[60px]">
+                      <div className="text-xl sm:text-2xl font-bold text-gray-900">
+                        {format(new Date(route.date), 'd')}
+                      </div>
+                      <div className="text-xs text-gray-500 uppercase">
+                        {format(new Date(route.date), 'MMM', { locale: cs })}
+                      </div>
                     </div>
-                    <div className="text-xs text-gray-500 uppercase">
-                      {format(new Date(route.date), 'MMM', { locale: cs })}
+
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-gray-900 truncate">{route.name}</div>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-500 mt-1">
+                        {route.vehicle && <span>{route.vehicle.name} ({route.vehicle.spz})</span>}
+                        {route.plannedKm && <span>Plan: {route.plannedKm} km</span>}
+                      </div>
+                      {route.mapUrl && (
+                        <a
+                          href={route.mapUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-primary-600 hover:underline"
+                        >
+                          Mapa
+                        </a>
+                      )}
                     </div>
                   </div>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-gray-900">{route.name}</div>
-                    <div className="flex items-center gap-3 text-sm text-gray-500 mt-1">
-                      {route.vehicle && <span>{route.vehicle.name} ({route.vehicle.spz})</span>}
-                      {route.plannedKm && <span>Plan: {route.plannedKm} km</span>}
-                    </div>
-                    {route.mapUrl && (
-                      <a
-                        href={route.mapUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-primary-600 hover:underline"
-                      >
-                        Mapa
-                      </a>
-                    )}
+                  <div className="mt-2 pt-2 border-t border-orange-100 sm:border-t-0 sm:pt-0 sm:mt-0 flex justify-end">
+                    <button
+                      onClick={() => handleOpenReport(route)}
+                      className="btn-primary text-sm w-full sm:w-auto"
+                    >
+                      Vyplnit report
+                    </button>
                   </div>
-
-                  <button
-                    onClick={() => handleOpenReport(route)}
-                    className="btn-primary text-sm"
-                  >
-                    Vyplnit report
-                  </button>
                 </div>
 
                 {/* Denní formulář */}
@@ -321,9 +325,9 @@ export default function DriverRoutesPage() {
           </h2>
           <div className="space-y-3">
             {upcomingRoutes.map((route) => (
-              <div key={route.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-                <div className="text-center min-w-[60px]">
-                  <div className="text-2xl font-bold text-gray-900">
+              <div key={route.id} className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-lg">
+                <div className="text-center min-w-[45px] sm:min-w-[60px]">
+                  <div className="text-xl sm:text-2xl font-bold text-gray-900">
                     {format(new Date(route.date), 'd')}
                   </div>
                   <div className="text-xs text-gray-500 uppercase">
@@ -331,8 +335,8 @@ export default function DriverRoutesPage() {
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium text-gray-900">{route.name}</div>
-                  <div className="flex items-center gap-3 text-sm text-gray-500 mt-1">
+                  <div className="font-medium text-gray-900 truncate">{route.name}</div>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-500 mt-1">
                     {route.vehicle && <span>{route.vehicle.name} ({route.vehicle.spz})</span>}
                     {route.plannedKm && <span>Plan: {route.plannedKm} km</span>}
                   </div>
@@ -346,10 +350,10 @@ export default function DriverRoutesPage() {
                       Mapa
                     </a>
                   )}
+                  <span className="inline-block mt-1 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-lg text-xs sm:text-sm font-medium">
+                    {format(new Date(route.date), 'EEEE', { locale: cs })}
+                  </span>
                 </div>
-                <span className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium">
-                  {format(new Date(route.date), 'EEEE', { locale: cs })}
-                </span>
               </div>
             ))}
           </div>
@@ -366,9 +370,9 @@ export default function DriverRoutesPage() {
             {completedRoutes.map((route) => {
               const report = getReport(route.id);
               return (
-                <div key={route.id} className="flex items-center gap-4 p-4 bg-white rounded-lg border border-gray-200">
-                  <div className="text-center min-w-[60px]">
-                    <div className="text-2xl font-bold text-gray-400">
+                <div key={route.id} className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 bg-white rounded-lg border border-gray-200">
+                  <div className="text-center min-w-[45px] sm:min-w-[60px]">
+                    <div className="text-xl sm:text-2xl font-bold text-gray-400">
                       {format(new Date(route.date), 'd')}
                     </div>
                     <div className="text-xs text-gray-400 uppercase">
@@ -376,8 +380,13 @@ export default function DriverRoutesPage() {
                     </div>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium text-gray-600">{route.name}</div>
-                    <div className="flex items-center gap-3 text-sm text-gray-400 mt-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="font-medium text-gray-600 truncate">{route.name}</div>
+                      <span className="flex-shrink-0 px-2 py-0.5 bg-green-100 text-green-700 rounded-lg text-xs sm:text-sm font-medium">
+                        Hotovo
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-400 mt-1">
                       {route.vehicle && <span>{route.vehicle.name}</span>}
                       <span>{route.actualKm || route.plannedKm || 0} km</span>
                       {report && (
@@ -390,14 +399,11 @@ export default function DriverRoutesPage() {
                           Auto: {report.carCheck}
                         </span>
                       )}
-                      {report?.carCheckNote && (
-                        <span className="text-red-500 text-xs">{report.carCheckNote}</span>
-                      )}
                     </div>
+                    {report?.carCheckNote && (
+                      <p className="text-red-500 text-xs mt-1">{report.carCheckNote}</p>
+                    )}
                   </div>
-                  <span className="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-sm font-medium">
-                    Hotovo
-                  </span>
                 </div>
               );
             })}

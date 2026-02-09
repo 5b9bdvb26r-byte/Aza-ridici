@@ -172,6 +172,7 @@ model DailyReport {
   actualKm     Int
   carCheck     String   @default("OK")
   carCheckNote String?
+  resolved     Boolean  @default(false) // Vyřešeno dispečerem (pro NOK hlášení)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

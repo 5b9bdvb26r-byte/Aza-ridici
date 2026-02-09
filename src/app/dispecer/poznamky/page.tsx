@@ -187,9 +187,9 @@ export default function NotesPage() {
     <div>
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Poznámky</h1>
 
-      <div className="flex gap-6">
+      <div className="flex flex-col md:flex-row gap-4 md:gap-6">
         {/* Levý panel - Kategorie */}
-        <div className="w-72 flex-shrink-0">
+        <div className="w-full md:w-72 md:flex-shrink-0">
           <div className="card">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">Kategorie</h2>
@@ -204,14 +204,14 @@ export default function NotesPage() {
             {categories.length === 0 ? (
               <p className="text-gray-500 text-sm">Zatím žádné kategorie. Vytvořte první.</p>
             ) : (
-              <div className="space-y-1">
+              <div className="flex md:flex-col gap-1 overflow-x-auto md:overflow-x-visible pb-2 md:pb-0">
                 {categories.map((cat) => (
                   <div
                     key={cat.id}
-                    className={`group flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition-colors ${
+                    className={`group flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition-colors whitespace-nowrap md:whitespace-normal flex-shrink-0 md:flex-shrink ${
                       selectedCategoryId === cat.id
                         ? 'bg-primary-50 text-primary-700 border border-primary-200'
-                        : 'hover:bg-gray-50 text-gray-700'
+                        : 'hover:bg-gray-50 text-gray-700 border border-transparent md:border-none'
                     }`}
                     onClick={() => setSelectedCategoryId(cat.id)}
                   >
@@ -249,12 +249,12 @@ export default function NotesPage() {
           {selectedCategory ? (
             <div className="card">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">
+                <h2 className="text-lg font-semibold text-gray-900 truncate mr-2">
                   {selectedCategory.name}
                 </h2>
                 <button
                   onClick={openNewNote}
-                  className="text-sm px-3 py-1.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                  className="text-sm px-3 py-1.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors whitespace-nowrap"
                 >
                   + Nová poznámka
                 </button>
@@ -267,11 +267,11 @@ export default function NotesPage() {
                   {notes.map((note) => (
                     <div
                       key={note.id}
-                      className="group border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors"
+                      className="group border border-gray-200 rounded-lg p-3 sm:p-4 hover:border-gray-300 transition-colors"
                     >
                       <div className="flex items-start justify-between gap-3">
-                        <p className="text-gray-800 whitespace-pre-wrap flex-1">{note.text}</p>
-                        <div className="hidden group-hover:flex items-center gap-1 flex-shrink-0 mt-0.5">
+                        <p className="text-gray-800 whitespace-pre-wrap flex-1 text-sm sm:text-base">{note.text}</p>
+                        <div className="flex md:hidden md:group-hover:flex items-center gap-1 flex-shrink-0 mt-0.5">
                           <button
                             onClick={() => openEditNote(note)}
                             className="text-gray-400 hover:text-primary-600 text-sm px-1.5 py-0.5"
@@ -298,7 +298,7 @@ export default function NotesPage() {
               )}
             </div>
           ) : (
-            <div className="card text-center py-12">
+            <div className="card text-center py-8 sm:py-12">
               <p className="text-gray-500">Vyberte kategorii pro zobrazení poznámek</p>
             </div>
           )}

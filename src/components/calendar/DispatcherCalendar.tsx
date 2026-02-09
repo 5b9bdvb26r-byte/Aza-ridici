@@ -120,37 +120,37 @@ export function DispatcherCalendar({
   const weekDays = ['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'];
 
   return (
-    <div className="card">
-      <div className="flex items-center justify-between mb-6">
+    <div className="card p-3 sm:p-6">
+      <div className="flex items-center justify-between mb-4 sm:mb-6">
         <button
           onClick={() => onMonthChange(subMonths(currentMonth, 1))}
-          className="btn-secondary"
+          className="btn-secondary text-xs sm:text-sm px-2 sm:px-4"
         >
-          &larr; Předchozí
+          &larr; <span className="hidden sm:inline">Předchozí</span>
         </button>
-        <h2 className="text-xl font-semibold text-gray-900 capitalize">
+        <h2 className="text-base sm:text-xl font-semibold text-gray-900 capitalize">
           {format(currentMonth, 'LLLL yyyy', { locale: cs })}
         </h2>
         <button
           onClick={() => onMonthChange(addMonths(currentMonth, 1))}
-          className="btn-secondary"
+          className="btn-secondary text-xs sm:text-sm px-2 sm:px-4"
         >
-          Další &rarr;
+          <span className="hidden sm:inline">Další</span> &rarr;
         </button>
       </div>
 
-      <div className="grid grid-cols-7 gap-1 mb-2">
+      <div className="grid grid-cols-7 gap-0.5 sm:gap-1 mb-2">
         {weekDays.map((day) => (
           <div
             key={day}
-            className="text-center text-sm font-medium text-gray-500 py-2"
+            className="text-center text-xs sm:text-sm font-medium text-gray-500 py-1 sm:py-2"
           >
             {day}
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
         {days.map((day) => {
           const isCurrentMonth = isSameMonth(day, currentMonth);
           const driversStatus = getDriversStatusForDay(day);
@@ -163,24 +163,24 @@ export function DispatcherCalendar({
               onClick={() => isCurrentMonth && onDayClick?.(day)}
               disabled={!isCurrentMonth}
               className={cn(
-                'min-h-[120px] p-2 rounded-lg text-sm transition-colors relative flex flex-col',
+                'min-h-[60px] sm:min-h-[120px] p-1 sm:p-2 rounded-lg text-sm transition-colors relative flex flex-col',
                 !isCurrentMonth && 'opacity-30 cursor-not-allowed bg-gray-50',
                 isCurrentMonth && 'bg-white hover:bg-gray-50 border border-gray-200 shadow-sm',
                 isToday(day) && 'ring-2 ring-primary-500 ring-offset-1 border-primary-300'
               )}
             >
               {/* Header: datum + počet dostupných */}
-              <div className="flex items-center justify-between mb-1.5">
+              <div className="flex items-center justify-between mb-0.5 sm:mb-1.5">
                 <span
                   className={cn(
-                    'font-bold text-sm w-7 h-7 flex items-center justify-center rounded-full',
+                    'font-bold text-xs sm:text-sm w-5 h-5 sm:w-7 sm:h-7 flex items-center justify-center rounded-full',
                     isToday(day) ? 'bg-primary-500 text-white' : 'text-gray-900'
                   )}
                 >
                   {format(day, 'd')}
                 </span>
                 {isCurrentMonth && (summary.available > 0 || summary.partial > 0) && (
-                  <div className="flex items-center gap-0.5">
+                  <div className="hidden sm:flex items-center gap-0.5">
                     {summary.available > 0 && (
                       <span className="text-[10px] font-bold text-green-700 bg-green-100 rounded-full px-1.5 py-0.5">
                         {summary.available}
@@ -195,16 +195,16 @@ export function DispatcherCalendar({
                 )}
               </div>
 
-              {/* Trasy */}
+              {/* Trasy - hidden on mobile, shown on desktop */}
               {isCurrentMonth && dayRoutes.length > 0 && (
-                <div className="space-y-0.5 overflow-hidden mb-1 flex-1">
+                <div className="hidden sm:block space-y-0.5 overflow-hidden mb-1 flex-1">
                   {dayRoutes.slice(0, 2).map((route) => (
                     <div
                       key={route.id}
                       className="text-[10px] leading-tight px-1 py-0.5 bg-blue-50 text-blue-800 rounded truncate font-medium"
                       title={`${route.name}${route.driver ? ` - ${route.driver.name}` : ''}`}
                     >
-                      🚗 {route.name}
+                      {route.name}
                     </div>
                   ))}
                   {dayRoutes.length > 2 && (
@@ -215,15 +215,24 @@ export function DispatcherCalendar({
                 </div>
               )}
 
+              {/* Mobile: compact route count indicator */}
+              {isCurrentMonth && dayRoutes.length > 0 && (
+                <div className="sm:hidden mt-auto">
+                  <span className="text-[9px] font-bold text-blue-700 bg-blue-100 rounded px-1">
+                    {dayRoutes.length}
+                  </span>
+                </div>
+              )}
+
               {/* Dostupnost řidičů - dole */}
               {isCurrentMonth && drivers.length > 0 && (
-                <div className="mt-auto pt-1 border-t border-gray-100">
+                <div className="mt-auto pt-0.5 sm:pt-1 border-t border-gray-100">
                   <div className="flex flex-wrap gap-0.5 justify-center">
                     {driversStatus.slice(0, 8).map(({ driver, status }) => (
                       <div
                         key={driver.id}
                         className={cn(
-                          'w-3 h-3 rounded-full border',
+                          'w-2 h-2 sm:w-3 sm:h-3 rounded-full border',
                           status ? statusColors[status] : 'bg-gray-200 border-gray-300',
                           status === 'AVAILABLE' && 'border-green-600',
                           status === 'UNAVAILABLE' && 'border-red-600',
@@ -233,7 +242,7 @@ export function DispatcherCalendar({
                       />
                     ))}
                     {driversStatus.length > 8 && (
-                      <span className="text-[9px] text-gray-400">
+                      <span className="text-[9px] text-gray-400 hidden sm:inline">
                         +{driversStatus.length - 8}
                       </span>
                     )}
@@ -245,27 +254,23 @@ export function DispatcherCalendar({
         })}
       </div>
 
-      <div className="mt-6 pt-4 border-t border-gray-200">
-        <div className="flex items-center justify-center flex-wrap gap-4 text-sm">
-          <div className="flex items-center space-x-2">
-            <span className="w-4 h-4 bg-green-500 rounded-full" />
+      <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-gray-200">
+        <div className="flex items-center justify-center flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm">
+          <div className="flex items-center space-x-1 sm:space-x-2">
+            <span className="w-3 h-3 sm:w-4 sm:h-4 bg-green-500 rounded-full" />
             <span>Dostupný</span>
           </div>
-          <div className="flex items-center space-x-2">
-            <span className="w-4 h-4 bg-orange-500 rounded-full" />
+          <div className="flex items-center space-x-1 sm:space-x-2">
+            <span className="w-3 h-3 sm:w-4 sm:h-4 bg-orange-500 rounded-full" />
             <span>Částečně</span>
           </div>
-          <div className="flex items-center space-x-2">
-            <span className="w-4 h-4 bg-red-500 rounded-full" />
+          <div className="flex items-center space-x-1 sm:space-x-2">
+            <span className="w-3 h-3 sm:w-4 sm:h-4 bg-red-500 rounded-full" />
             <span>Nedostupný</span>
           </div>
-          <div className="flex items-center space-x-2">
-            <span className="w-4 h-4 bg-gray-300 rounded-full" />
+          <div className="flex items-center space-x-1 sm:space-x-2">
+            <span className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-300 rounded-full" />
             <span>Nevyplněno</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <span className="w-4 h-4 bg-blue-50 text-blue-800 rounded flex items-center justify-center text-[8px]">🚗</span>
-            <span>Přiřazená jízda</span>
           </div>
         </div>
       </div>

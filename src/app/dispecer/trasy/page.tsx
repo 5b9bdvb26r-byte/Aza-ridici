@@ -743,69 +743,68 @@ function RouteCard({
   onStatusChange: (route: Route, status: string) => void;
 }) {
   return (
-    <div className="flex items-center gap-4 p-4 bg-white rounded-lg border border-gray-200">
-      {/* Datum */}
-      <div className="text-center min-w-[60px]">
-        <div className="text-2xl font-bold text-gray-900">
-          {format(new Date(route.date), 'd')}
+    <div className="p-3 sm:p-4 bg-white rounded-lg border border-gray-200">
+      <div className="flex items-start gap-3 sm:gap-4">
+        {/* Datum */}
+        <div className="text-center min-w-[45px] sm:min-w-[60px]">
+          <div className="text-xl sm:text-2xl font-bold text-gray-900">
+            {format(new Date(route.date), 'd')}
+          </div>
+          <div className="text-xs text-gray-500 uppercase">
+            {format(new Date(route.date), 'MMM', { locale: cs })}
+          </div>
         </div>
-        <div className="text-xs text-gray-500 uppercase">
-          {format(new Date(route.date), 'MMM', { locale: cs })}
+
+        {/* Info */}
+        <div className="flex-1 min-w-0">
+          <div className="font-medium text-gray-900 truncate">{route.name}</div>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-500 mt-1">
+            {route.driver ? (
+              <span className="flex items-center gap-1">
+                <span
+                  className="w-3 h-3 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: route.driver.color || '#9CA3AF' }}
+                />
+                {route.driver.name}
+              </span>
+            ) : (
+              <span className="text-orange-600">Nepřiřazen</span>
+            )}
+            {route.vehicle && (
+              <span>• {route.vehicle.spz}</span>
+            )}
+            {(route.actualKm || route.plannedKm) && (
+              <span>
+                • {route.actualKm || route.plannedKm} km
+              </span>
+            )}
+            {route.complaintCount > 0 && (
+              <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-bold rounded-full">
+                {route.complaintCount} rekl.
+              </span>
+            )}
+          </div>
+          {route.mapUrl && (
+            <a
+              href={route.mapUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-primary-600 hover:underline"
+            >
+              Mapa
+            </a>
+          )}
         </div>
       </div>
 
-      {/* Info */}
-      <div className="flex-1 min-w-0">
-        <div className="font-medium text-gray-900">{route.name}</div>
-        <div className="flex items-center gap-3 text-sm text-gray-500 mt-1">
-          {route.driver ? (
-            <span className="flex items-center gap-1">
-              <span
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: route.driver.color || '#9CA3AF' }}
-              />
-              {route.driver.name}
-            </span>
-          ) : (
-            <span className="text-orange-600">Nepřiřazen</span>
-          )}
-          {route.vehicle && (
-            <span>• {route.vehicle.spz}</span>
-          )}
-          {(route.actualKm || route.plannedKm) && (
-            <span>
-              • {route.actualKm || route.plannedKm} km
-              {route.actualKm && route.plannedKm && route.actualKm !== route.plannedKm && (
-                <span className="text-gray-400"> (plan: {route.plannedKm})</span>
-              )}
-            </span>
-          )}
-          {route.complaintCount > 0 && (
-            <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-bold rounded-full">
-              ⚠️ {route.complaintCount} {route.complaintCount === 1 ? 'reklamace' : route.complaintCount < 5 ? 'reklamace' : 'reklamací'}
-            </span>
-          )}
-        </div>
-        {route.mapUrl && (
-          <a
-            href={route.mapUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-primary-600 hover:underline"
-          >
-            🗺️ Mapa
-          </a>
-        )}
-      </div>
-
-      {/* Stav a akce */}
-      <div className="flex items-center gap-2">
+      {/* Stav a akce - separate row on mobile */}
+      <div className="flex items-center justify-end gap-2 mt-2 sm:mt-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100">
         {route.status === 'PLANNED' && (
           <button
             onClick={() => onStatusChange(route, 'IN_PROGRESS')}
             className="px-3 py-1.5 bg-yellow-100 text-yellow-700 rounded-lg text-sm font-medium hover:bg-yellow-200 transition-colors"
           >
-            ▶️ Zahájit
+            Zahájit
           </button>
         )}
         {route.status === 'IN_PROGRESS' && (
@@ -813,12 +812,12 @@ function RouteCard({
             onClick={() => onStatusChange(route, 'COMPLETED')}
             className="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-sm font-medium hover:bg-green-200 transition-colors"
           >
-            ✅ Dokončit
+            Dokončit
           </button>
         )}
         {route.status === 'COMPLETED' && (
           <span className="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-sm font-medium">
-            ✅ Hotovo
+            Hotovo
           </span>
         )}
         <button
