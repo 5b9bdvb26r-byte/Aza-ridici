@@ -16,6 +16,7 @@ import {
 } from 'date-fns';
 import { cs } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 interface AvailabilityData {
   id: string;
@@ -38,10 +39,24 @@ export default function DriverAvailabilityPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>('AVAILABLE');
   const [selectedNote, setSelectedNote] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [pendingRoutes, setPendingRoutes] = useState(0);
 
   useEffect(() => {
     fetchAvailability();
+    fetchPendingRoutes();
   }, []);
+
+  const fetchPendingRoutes = async () => {
+    try {
+      const response = await fetch('/api/routes/pending-count');
+      if (response.ok) {
+        const data = await response.json();
+        setPendingRoutes(data.count);
+      }
+    } catch {
+      // silently fail
+    }
+  };
 
   const fetchAvailability = async () => {
     try {
@@ -156,6 +171,26 @@ export default function DriverAvailabilityPage() {
         <h1 className="text-2xl font-bold text-gray-900">Moje dostupnost</h1>
         <p className="text-gray-600 mt-1">Nastavte svou dostupnost pro rozvoz</p>
       </div>
+
+      {/* Upozornění na nevyplněné reporty */}
+      {pendingRoutes > 0 && (
+        <Link href="/ridic/trasy" className="block mb-6">
+          <div className="p-4 bg-orange-50 border-2 border-orange-300 rounded-lg flex items-center gap-3 hover:bg-orange-100 transition-colors">
+            <div className="flex-shrink-0 w-10 h-10 bg-orange-500 text-white rounded-full flex items-center justify-center font-bold text-lg">
+              {pendingRoutes}
+            </div>
+            <div>
+              <div className="font-semibold text-orange-800">
+                {pendingRoutes === 1 ? 'Máte 1 nevyplněný report' : `Máte ${pendingRoutes} nevyplněné reporty`}
+              </div>
+              <div className="text-sm text-orange-600">
+                Klikněte pro vyplnění v Moje trasy
+              </div>
+            </div>
+            <div className="ml-auto text-orange-400 text-xl">&rarr;</div>
+          </div>
+        </Link>
+      )}
 
       {/* Kalendář */}
       <div className="card">

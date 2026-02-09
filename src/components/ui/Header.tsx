@@ -12,6 +12,7 @@ export function Header() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [nokCount, setNokCount] = useState(0);
+  const [pendingRoutes, setPendingRoutes] = useState(0);
 
   const isDispatcher =
     session?.user?.role === 'DISPATCHER' || session?.user?.role === 'ADMIN';
@@ -24,6 +25,27 @@ export function Header() {
     sessionStorage.setItem(key, '1');
     fetch('/api/routes/auto-complete', { method: 'POST' }).catch(() => {});
   }, [session?.user?.id]);
+
+  // Fetch pending routes count for driver badge
+  useEffect(() => {
+    if (isDispatcher || !session?.user?.id) return;
+
+    const fetchPendingCount = async () => {
+      try {
+        const response = await fetch('/api/routes/pending-count');
+        if (response.ok) {
+          const data = await response.json();
+          setPendingRoutes(data.count);
+        }
+      } catch {
+        // silently fail
+      }
+    };
+
+    fetchPendingCount();
+    const interval = setInterval(fetchPendingCount, 60000);
+    return () => clearInterval(interval);
+  }, [isDispatcher, session?.user?.id]);
 
   // Fetch NOK report count for dispatcher badge
   useEffect(() => {
@@ -156,7 +178,7 @@ export function Header() {
             ) : (
               <>
                 <NavLink href="/ridic">Dostupnost</NavLink>
-                <NavLink href="/ridic/trasy">Moje trasy</NavLink>
+                <NavLink href="/ridic/trasy" badge={pendingRoutes}>Moje trasy</NavLink>
                 <NavLink href="/ridic/statistiky">Statistiky</NavLink>
               </>
             )}
@@ -175,12 +197,13 @@ export function Header() {
                   <NavLink href="/dispecer/ridici">Řidiči</NavLink>
                   <NavLink href="/dispecer/statistiky">Statistiky</NavLink>
                   <NavLink href="/dispecer/poznamky">Poznámky</NavLink>
+                  <NavLink href="/dispecer/sklad">Sklad</NavLink>
                   <NavLink href="/dispecer/hlaseni" badge={nokCount}>Hlášení</NavLink>
                 </>
               ) : (
                 <>
                   <NavLink href="/ridic">Dostupnost</NavLink>
-                  <NavLink href="/ridic/trasy">Moje trasy</NavLink>
+                  <NavLink href="/ridic/trasy" badge={pendingRoutes}>Moje trasy</NavLink>
                   <NavLink href="/ridic/statistiky">Statistiky</NavLink>
                 </>
               )}
