@@ -17,6 +17,14 @@ interface Vehicle {
   spz: string;
 }
 
+interface Order {
+  id?: string;
+  orderNumber: string;
+  price: string;
+  deliveryTime: string;
+  note: string;
+}
+
 interface Route {
   id: string;
   name: string;
@@ -28,8 +36,11 @@ interface Route {
   status: string;
   confirmed: boolean;
   complaintCount: number;
+  fuelCost: number;
+  driverPay: number;
   driver: Driver | null;
   vehicle: Vehicle | null;
+  orders?: Order[];
 }
 
 interface Availability {
@@ -57,6 +68,13 @@ const availabilityColors: Record<string, { bg: string; text: string; label: stri
   UNAVAILABLE: { bg: 'bg-red-100', text: 'text-red-700', label: 'Nedostupný' },
 };
 
+const emptyOrder = (): Order => ({
+  orderNumber: '',
+  price: '',
+  deliveryTime: '',
+  note: '',
+});
+
 export default function RoutesPage() {
   const [routes, setRoutes] = useState<Route[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
@@ -76,7 +94,10 @@ export default function RoutesPage() {
     note: '',
     status: 'PLANNED',
     complaintCount: '0',
+    fuelCost: '',
+    driverPay: '',
   });
+  const [orders, setOrders] = useState<Order[]>([emptyOrder()]);
   const [isSaving, setIsSaving] = useState(false);
 
   // Modal pro dokončení jízdy
@@ -179,6 +200,31 @@ export default function RoutesPage() {
     );
   };
 
+  // Objednávky helpers
+  const addOrderRow = () => {
+    setOrders([...orders, emptyOrder()]);
+  };
+
+  const removeOrderRow = (index: number) => {
+    if (orders.length === 1) {
+      setOrders([emptyOrder()]);
+      return;
+    }
+    setOrders(orders.filter((_, i) => i !== index));
+  };
+
+  const updateOrder = (index: number, field: keyof Order, value: string) => {
+    const newOrders = [...orders];
+    newOrders[index] = { ...newOrders[index], [field]: value };
+    setOrders(newOrders);
+  };
+
+  // Výpočty
+  const ordersTotal = orders.reduce((sum, o) => sum + (parseFloat(o.price) || 0), 0);
+  const fuelCostNum = parseFloat(formData.fuelCost) || 0;
+  const driverPayNum = parseFloat(formData.driverPay) || 0;
+  const profit = ordersTotal - fuelCostNum - driverPayNum;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
@@ -189,10 +235,16 @@ export default function RoutesPage() {
         : '/api/routes';
       const method = editingRoute ? 'PUT' : 'POST';
 
+      // Filtrovat prázdné objednávky
+      const validOrders = orders.filter((o) => o.orderNumber.trim() !== '');
+
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          orders: validOrders,
+        }),
       });
 
       if (response.ok) {
@@ -219,7 +271,23 @@ export default function RoutesPage() {
       note: route.note || '',
       status: route.status,
       complaintCount: route.complaintCount?.toString() || '0',
+      fuelCost: route.fuelCost ? route.fuelCost.toString() : '',
+      driverPay: route.driverPay ? route.driverPay.toString() : '',
     });
+    // Načíst objednávky
+    if (route.orders && route.orders.length > 0) {
+      setOrders(
+        route.orders.map((o) => ({
+          id: o.id,
+          orderNumber: o.orderNumber,
+          price: o.price?.toString() || '',
+          deliveryTime: o.deliveryTime || '',
+          note: o.note || '',
+        }))
+      );
+    } else {
+      setOrders([emptyOrder()]);
+    }
     setShowForm(true);
   };
 
@@ -253,7 +321,10 @@ export default function RoutesPage() {
       note: '',
       status: 'PLANNED',
       complaintCount: '0',
+      fuelCost: '',
+      driverPay: '',
     });
+    setOrders([emptyOrder()]);
   };
 
   // Změna stavu trasy
@@ -567,6 +638,206 @@ export default function RoutesPage() {
                 </div>
               )}
             </div>
+
+            {/* Tabulka objednávek */}
+            <div className="border border-gray-200 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-semibold text-gray-900">Objednávky</h3>
+                <button
+                  type="button"
+                  onClick={addOrderRow}
+                  className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                >
+                  + Přidat řádek
+                </button>
+              </div>
+
+              {/* Desktop tabulka */}
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-200">
+                      <th className="text-left py-2 px-2 font-medium text-gray-600">Číslo obj.</th>
+                      <th className="text-left py-2 px-2 font-medium text-gray-600">Cena (Kč)</th>
+                      <th className="text-left py-2 px-2 font-medium text-gray-600">Čas doručení</th>
+                      <th className="text-left py-2 px-2 font-medium text-gray-600">Poznámka</th>
+                      <th className="py-2 px-2 w-10"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {orders.map((order, index) => (
+                      <tr key={index} className="border-b border-gray-100">
+                        <td className="py-1.5 px-2">
+                          <input
+                            type="text"
+                            value={order.orderNumber}
+                            onChange={(e) => updateOrder(index, 'orderNumber', e.target.value)}
+                            className="input text-sm py-1.5"
+                            placeholder="OBJ-001"
+                          />
+                        </td>
+                        <td className="py-1.5 px-2">
+                          <input
+                            type="number"
+                            value={order.price}
+                            onChange={(e) => updateOrder(index, 'price', e.target.value)}
+                            className="input text-sm py-1.5"
+                            placeholder="0"
+                            min="0"
+                            step="0.01"
+                          />
+                        </td>
+                        <td className="py-1.5 px-2">
+                          <input
+                            type="text"
+                            value={order.deliveryTime}
+                            onChange={(e) => updateOrder(index, 'deliveryTime', e.target.value)}
+                            className="input text-sm py-1.5"
+                            placeholder="10:00"
+                          />
+                        </td>
+                        <td className="py-1.5 px-2">
+                          <input
+                            type="text"
+                            value={order.note}
+                            onChange={(e) => updateOrder(index, 'note', e.target.value)}
+                            className="input text-sm py-1.5"
+                            placeholder="Poznámka"
+                          />
+                        </td>
+                        <td className="py-1.5 px-2">
+                          <button
+                            type="button"
+                            onClick={() => removeOrderRow(index)}
+                            className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                            title="Odebrat"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile karty */}
+              <div className="sm:hidden space-y-3">
+                {orders.map((order, index) => (
+                  <div key={index} className="bg-gray-50 rounded-lg p-3 relative">
+                    <button
+                      type="button"
+                      onClick={() => removeOrderRow(index)}
+                      className="absolute top-2 right-2 p-1 text-gray-400 hover:text-red-500"
+                      title="Odebrat"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-xs text-gray-500">Číslo obj.</label>
+                        <input
+                          type="text"
+                          value={order.orderNumber}
+                          onChange={(e) => updateOrder(index, 'orderNumber', e.target.value)}
+                          className="input text-sm py-1.5"
+                          placeholder="OBJ-001"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500">Cena (Kč)</label>
+                        <input
+                          type="number"
+                          value={order.price}
+                          onChange={(e) => updateOrder(index, 'price', e.target.value)}
+                          className="input text-sm py-1.5"
+                          placeholder="0"
+                          min="0"
+                          step="0.01"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500">Čas doručení</label>
+                        <input
+                          type="text"
+                          value={order.deliveryTime}
+                          onChange={(e) => updateOrder(index, 'deliveryTime', e.target.value)}
+                          className="input text-sm py-1.5"
+                          placeholder="10:00"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500">Poznámka</label>
+                        <input
+                          type="text"
+                          value={order.note}
+                          onChange={(e) => updateOrder(index, 'note', e.target.value)}
+                          className="input text-sm py-1.5"
+                          placeholder="Poznámka"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Náklady a zisk */}
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Nafta (Kč)</label>
+                    <input
+                      type="number"
+                      value={formData.fuelCost}
+                      onChange={(e) => setFormData({ ...formData, fuelCost: e.target.value })}
+                      className="input text-sm mt-1"
+                      placeholder="0"
+                      min="0"
+                      step="0.01"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Výplata řidiče (Kč)</label>
+                    <input
+                      type="number"
+                      value={formData.driverPay}
+                      onChange={(e) => setFormData({ ...formData, driverPay: e.target.value })}
+                      className="input text-sm mt-1"
+                      placeholder="0"
+                      min="0"
+                      step="0.01"
+                    />
+                  </div>
+                  <div className="flex flex-col justify-end">
+                    <div className="bg-gray-50 rounded-lg p-3 text-sm space-y-1">
+                      <div className="flex justify-between text-gray-600">
+                        <span>Objednávky:</span>
+                        <span className="font-medium">{ordersTotal.toLocaleString('cs-CZ')} Kč</span>
+                      </div>
+                      <div className="flex justify-between text-gray-600">
+                        <span>Nafta:</span>
+                        <span className="font-medium text-red-600">-{fuelCostNum.toLocaleString('cs-CZ')} Kč</span>
+                      </div>
+                      <div className="flex justify-between text-gray-600">
+                        <span>Výplata:</span>
+                        <span className="font-medium text-red-600">-{driverPayNum.toLocaleString('cs-CZ')} Kč</span>
+                      </div>
+                      <div className="flex justify-between pt-1 border-t border-gray-300 font-bold">
+                        <span>Zisk:</span>
+                        <span className={profit >= 0 ? 'text-green-700' : 'text-red-700'}>
+                          {profit.toLocaleString('cs-CZ')} Kč
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div>
               <label htmlFor="note" className="label">
                 Poznámka
@@ -608,7 +879,7 @@ export default function RoutesPage() {
         {inProgressRoutes.length > 0 && (
           <div className="card border-2 border-yellow-200 bg-yellow-50/30">
             <h2 className="text-lg font-semibold text-yellow-800 mb-4 flex items-center gap-2">
-              🚗 Probíhající jízdy ({inProgressRoutes.length})
+              Probíhající jízdy ({inProgressRoutes.length})
             </h2>
             <div className="space-y-3">
               {inProgressRoutes.map((route) => (
@@ -628,7 +899,7 @@ export default function RoutesPage() {
         {plannedRoutes.length > 0 && (
           <div className="card">
             <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              📋 Naplánované ({plannedRoutes.length})
+              Naplánované ({plannedRoutes.length})
             </h2>
             <div className="space-y-3">
               {plannedRoutes.map((route) => (
@@ -648,7 +919,7 @@ export default function RoutesPage() {
         {completedRoutes.length > 0 && (
           <div className="card bg-gray-50">
             <h2 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
-              ✅ Dokončené ({completedRoutes.length})
+              Dokončené ({completedRoutes.length})
             </h2>
             <div className="space-y-3">
               {completedRoutes.map((route) => (
@@ -681,7 +952,7 @@ export default function RoutesPage() {
             <p className="text-gray-600 mb-4">
               <strong>{completeModal.name}</strong>
               {completeModal.vehicle && (
-                <span className="text-gray-500"> • {completeModal.vehicle.name}</span>
+                <span className="text-gray-500"> - {completeModal.vehicle.name}</span>
               )}
             </p>
             <div className="mb-4">
@@ -703,7 +974,7 @@ export default function RoutesPage() {
             </div>
             {completeModal.vehicle && (
               <div className="p-3 bg-blue-50 rounded-lg text-sm text-blue-700 mb-4">
-                ℹ️ Po dokončení se {actualKmInput || completeModal.plannedKm || 0} km připíše k počítadlu oleje a AdBlue vozidla {completeModal.vehicle.name}.
+                Po dokončení se {actualKmInput || completeModal.plannedKm || 0} km připíše k počítadlu oleje a AdBlue vozidla {completeModal.vehicle.name}.
               </div>
             )}
             <div className="flex gap-3">
@@ -720,7 +991,7 @@ export default function RoutesPage() {
                 onClick={handleCompleteRoute}
                 className="btn-primary flex-1"
               >
-                ✅ Dokončit
+                Dokončit
               </button>
             </div>
           </div>
@@ -742,6 +1013,10 @@ function RouteCard({
   onDelete: (id: string) => void;
   onStatusChange: (route: Route, status: string) => void;
 }) {
+  const ordersTotal = route.orders?.reduce((sum, o) => sum + (parseFloat(o.price?.toString()) || 0), 0) || 0;
+  const profit = ordersTotal - (route.fuelCost || 0) - (route.driverPay || 0);
+  const hasFinancials = ordersTotal > 0 || route.fuelCost > 0 || route.driverPay > 0;
+
   return (
     <div className="p-3 sm:p-4 bg-white rounded-lg border border-gray-200">
       <div className="flex items-start gap-3 sm:gap-4">
@@ -771,11 +1046,11 @@ function RouteCard({
               <span className="text-orange-600">Nepřiřazen</span>
             )}
             {route.vehicle && (
-              <span>• {route.vehicle.spz}</span>
+              <span>- {route.vehicle.spz}</span>
             )}
             {(route.actualKm || route.plannedKm) && (
               <span>
-                • {route.actualKm || route.plannedKm} km
+                - {route.actualKm || route.plannedKm} km
               </span>
             )}
             {route.complaintCount > 0 && (
@@ -793,6 +1068,26 @@ function RouteCard({
             >
               Mapa
             </a>
+          )}
+
+          {/* Finanční souhrn */}
+          {hasFinancials && (
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs mt-2 pt-2 border-t border-gray-100">
+              {route.orders && route.orders.length > 0 && (
+                <span className="text-gray-500">
+                  {route.orders.length} obj. | {ordersTotal.toLocaleString('cs-CZ')} Kč
+                </span>
+              )}
+              {route.fuelCost > 0 && (
+                <span className="text-red-600">Nafta: -{route.fuelCost.toLocaleString('cs-CZ')} Kč</span>
+              )}
+              {route.driverPay > 0 && (
+                <span className="text-red-600">Výplata: -{route.driverPay.toLocaleString('cs-CZ')} Kč</span>
+              )}
+              <span className={cn('font-bold', profit >= 0 ? 'text-green-700' : 'text-red-700')}>
+                Zisk: {profit.toLocaleString('cs-CZ')} Kč
+              </span>
+            </div>
           )}
         </div>
       </div>
@@ -825,14 +1120,18 @@ function RouteCard({
           className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
           title="Upravit"
         >
-          ✏️
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+          </svg>
         </button>
         <button
           onClick={() => onDelete(route.id)}
           className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
           title="Smazat"
         >
-          🗑️
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
         </button>
       </div>
     </div>
