@@ -168,6 +168,7 @@ export function Header() {
               <>
                 <NavLink href="/dispecer">Přehled řidičů</NavLink>
                 <NavLink href="/dispecer/trasy">Trasy</NavLink>
+                <NavLink href="/dispecer/prehled-tras">Přehled tras</NavLink>
                 <NavLink href="/dispecer/vozidla">Vozidla</NavLink>
                 <NavLink href="/dispecer/ridici">Řidiči</NavLink>
                 <NavLink href="/dispecer/statistiky">Statistiky</NavLink>
@@ -193,6 +194,7 @@ export function Header() {
                 <>
                   <NavLink href="/dispecer">Přehled řidičů</NavLink>
                   <NavLink href="/dispecer/trasy">Trasy</NavLink>
+                  <NavLink href="/dispecer/prehled-tras">Přehled tras</NavLink>
                   <NavLink href="/dispecer/vozidla">Vozidla</NavLink>
                   <NavLink href="/dispecer/ridici">Řidiči</NavLink>
                   <NavLink href="/dispecer/statistiky">Statistiky</NavLink>

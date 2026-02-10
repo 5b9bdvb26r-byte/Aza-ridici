@@ -202,14 +202,16 @@ export default function DriverRoutesPage() {
         {isExpanded && (
           <div className="mt-2 space-y-1.5">
             {route.orders.map((order) => (
-              <div key={order.id} className="flex items-center gap-3 text-sm bg-gray-50 rounded-lg p-2">
-                <span className="font-mono font-medium text-gray-800 min-w-[80px]">{order.orderNumber}</span>
-                <span className="font-medium text-gray-900">{order.price.toLocaleString('cs-CZ')} Kč</span>
-                {order.deliveryTime && (
-                  <span className="text-gray-500">{order.deliveryTime}</span>
-                )}
-                {order.note && (
-                  <span className="text-gray-400 truncate">{order.note}</span>
+              <div key={order.id} className="text-sm bg-gray-50 rounded-lg p-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono font-medium text-gray-800">{order.orderNumber}</span>
+                  <span className="font-medium text-gray-900">{order.price.toLocaleString('cs-CZ')} Kč</span>
+                </div>
+                {(order.deliveryTime || order.note) && (
+                  <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
+                    {order.deliveryTime && <span>Doručení: {order.deliveryTime}</span>}
+                    {order.note && <span>{order.note}</span>}
+                  </div>
                 )}
               </div>
             ))}

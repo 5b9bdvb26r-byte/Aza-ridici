@@ -41,6 +41,8 @@ export async function GET(request: NextRequest) {
       include: {
         driver: { select: { id: true, name: true, color: true } },
         vehicle: { select: { id: true, name: true, spz: true } },
+        orders: { orderBy: { createdAt: 'asc' } },
+        dailyReport: true,
       },
       orderBy: { date: 'asc' },
     });
@@ -66,7 +68,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, mapUrl, plannedKm, date, driverId, vehicleId, note, complaintCount } = body;
+    const { name, mapUrl, plannedKm, date, driverId, vehicleId, note, complaintCount, fuelCost, driverPay, orders } = body;
 
     if (!name || !date) {
       return NextResponse.json(
@@ -85,10 +87,21 @@ export async function POST(request: NextRequest) {
         vehicleId: vehicleId || null,
         note: note || null,
         complaintCount: complaintCount ? parseInt(complaintCount) : 0,
+        fuelCost: fuelCost ? parseFloat(fuelCost) : 0,
+        driverPay: driverPay ? parseFloat(driverPay) : 0,
+        orders: orders && orders.length > 0 ? {
+          create: orders.map((o: { orderNumber: string; price: string; deliveryTime: string; note: string }) => ({
+            orderNumber: o.orderNumber,
+            price: o.price ? parseFloat(o.price) : 0,
+            deliveryTime: o.deliveryTime || null,
+            note: o.note || null,
+          })),
+        } : undefined,
       },
       include: {
         driver: { select: { id: true, name: true, color: true } },
         vehicle: { select: { id: true, name: true, spz: true } },
+        orders: { orderBy: { createdAt: 'asc' } },
       },
     });
 
