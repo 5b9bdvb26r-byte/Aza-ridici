@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
-// GET - Získat NOK hlášení (pro dispečera)
+// GET - Získat hlášení (pro dispečera)
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -18,10 +18,17 @@ export async function GET(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams;
     const resolved = searchParams.get('resolved');
+    const type = searchParams.get('type'); // 'nok', 'ok', 'all' (default: 'all')
 
-    const where: { carCheck: string; resolved?: boolean } = {
-      carCheck: 'NOK',
-    };
+    const where: { carCheck?: string; resolved?: boolean } = {};
+
+    // Filtr typu
+    if (type === 'nok') {
+      where.carCheck = 'NOK';
+    } else if (type === 'ok') {
+      where.carCheck = 'OK';
+    }
+    // 'all' nebo bez type = žádný filtr na carCheck
 
     if (resolved === 'true') {
       where.resolved = true;
@@ -48,18 +55,21 @@ export async function GET(request: NextRequest) {
     });
 
     // Count of unresolved NOK reports
-    const count = await prisma.dailyReport.count({
+    const nokCount = await prisma.dailyReport.count({
       where: { carCheck: 'NOK', resolved: false },
     });
 
-    return NextResponse.json({ reports, count });
+    // Count of all reports
+    const totalCount = await prisma.dailyReport.count();
+
+    return NextResponse.json({ reports, count: nokCount, totalCount });
   } catch (error) {
-    console.error('Chyba při načítání NOK hlášení:', error);
+    console.error('Chyba při načítání hlášení:', error);
     return NextResponse.json({ error: 'Chyba serveru' }, { status: 500 });
   }
 }
 
-// PATCH - Označit NOK report jako vyřešený
+// PATCH - Označit report jako vyřešený
 export async function PATCH(request: Request) {
   try {
     const session = await getServerSession(authOptions);

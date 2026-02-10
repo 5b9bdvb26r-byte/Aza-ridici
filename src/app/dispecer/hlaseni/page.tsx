@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { cs } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 
-interface NokReport {
+interface Report {
   id: string;
   routeId: string;
   driverId: string;
@@ -27,14 +27,26 @@ interface NokReport {
   };
 }
 
+type TabType = 'all' | 'nok';
+type FilterType = 'all' | 'unresolved' | 'resolved';
+
 export default function HlaseniPage() {
-  const [reports, setReports] = useState<NokReport[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'unresolved' | 'resolved'>('unresolved');
+  const [tab, setTab] = useState<TabType>('all');
+  const [filter, setFilter] = useState<FilterType>('all');
 
   const fetchReports = useCallback(async () => {
     try {
       const params = new URLSearchParams();
+
+      // Typ reportu
+      if (tab === 'nok') {
+        params.set('type', 'nok');
+      }
+      // tab === 'all' = všechny typy
+
+      // Filtr resolved
       if (filter === 'resolved') params.set('resolved', 'true');
       else if (filter === 'unresolved') params.set('resolved', 'false');
 
@@ -48,7 +60,7 @@ export default function HlaseniPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [filter]);
+  }, [tab, filter]);
 
   useEffect(() => {
     setIsLoading(true);
@@ -73,7 +85,7 @@ export default function HlaseniPage() {
     }
   };
 
-  const unresolvedCount = reports.filter((r) => !r.resolved).length;
+  const nokCount = reports.filter((r) => r.carCheck === 'NOK' && !r.resolved).length;
 
   if (isLoading) {
     return (
@@ -86,65 +98,92 @@ export default function HlaseniPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Hlášení vozidel</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Hlášení</h1>
         <p className="text-gray-600 mt-1">
-          Problémy nahlášené řidiči při kontrole auta (NOK)
+          Přehled všech denních reportů od řidičů
         </p>
       </div>
 
-      {/* Filter tabs */}
-      <div className="flex gap-2 mb-6">
+      {/* Záložky - Všechny reporty / NOK problémy */}
+      <div className="flex gap-2 mb-4">
         <button
-          onClick={() => setFilter('unresolved')}
+          onClick={() => { setTab('all'); setFilter('all'); }}
           className={cn(
-            'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
-            filter === 'unresolved'
+            'px-4 py-2.5 rounded-lg text-sm font-medium transition-colors',
+            tab === 'all'
+              ? 'bg-primary-100 text-primary-800 border-2 border-primary-300'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border-2 border-transparent'
+          )}
+        >
+          Všechny reporty
+        </button>
+        <button
+          onClick={() => { setTab('nok'); setFilter('unresolved'); }}
+          className={cn(
+            'px-4 py-2.5 rounded-lg text-sm font-medium transition-colors',
+            tab === 'nok'
               ? 'bg-red-100 text-red-800 border-2 border-red-300'
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border-2 border-transparent'
           )}
         >
-          Nevyřešené
-          {filter !== 'unresolved' && unresolvedCount > 0 && (
+          NOK problémy
+          {tab !== 'nok' && nokCount > 0 && (
             <span className="ml-2 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
-              {unresolvedCount}
+              {nokCount}
             </span>
           )}
         </button>
-        <button
-          onClick={() => setFilter('resolved')}
-          className={cn(
-            'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
-            filter === 'resolved'
-              ? 'bg-green-100 text-green-800 border-2 border-green-300'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border-2 border-transparent'
-          )}
-        >
-          Vyřešené
-        </button>
-        <button
-          onClick={() => setFilter('all')}
-          className={cn(
-            'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
-            filter === 'all'
-              ? 'bg-gray-200 text-gray-900 border-2 border-gray-400'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border-2 border-transparent'
-          )}
-        >
-          Všechna
-        </button>
       </div>
+
+      {/* Sub-filtr pro NOK záložku */}
+      {tab === 'nok' && (
+        <div className="flex gap-2 mb-6">
+          <button
+            onClick={() => setFilter('unresolved')}
+            className={cn(
+              'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
+              filter === 'unresolved'
+                ? 'bg-red-100 text-red-800 border border-red-300'
+                : 'bg-gray-50 text-gray-500 hover:bg-gray-100 border border-transparent'
+            )}
+          >
+            Nevyřešené
+          </button>
+          <button
+            onClick={() => setFilter('resolved')}
+            className={cn(
+              'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
+              filter === 'resolved'
+                ? 'bg-green-100 text-green-800 border border-green-300'
+                : 'bg-gray-50 text-gray-500 hover:bg-gray-100 border border-transparent'
+            )}
+          >
+            Vyřešené
+          </button>
+          <button
+            onClick={() => setFilter('all')}
+            className={cn(
+              'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
+              filter === 'all'
+                ? 'bg-gray-200 text-gray-900 border border-gray-400'
+                : 'bg-gray-50 text-gray-500 hover:bg-gray-100 border border-transparent'
+            )}
+          >
+            Vše
+          </button>
+        </div>
+      )}
 
       {reports.length === 0 ? (
         <div className="card py-12 text-center">
-          <div className="text-4xl mb-3">
-            {filter === 'unresolved' ? '🎉' : '📋'}
-          </div>
           <p className="text-gray-500">
-            {filter === 'unresolved'
-              ? 'Žádná nevyřešená hlášení'
-              : filter === 'resolved'
-              ? 'Žádná vyřešená hlášení'
-              : 'Žádná hlášení'}
+            {tab === 'nok' && filter === 'unresolved'
+              ? 'Žádná nevyřešená NOK hlášení'
+              : tab === 'nok' && filter === 'resolved'
+              ? 'Žádná vyřešená NOK hlášení'
+              : tab === 'nok'
+              ? 'Žádná NOK hlášení'
+              : 'Žádné reporty'}
           </p>
         </div>
       ) : (
@@ -154,8 +193,9 @@ export default function HlaseniPage() {
               key={report.id}
               className={cn(
                 'card p-4 sm:p-6 transition-all',
-                !report.resolved && 'border-l-4 border-l-red-500 bg-red-50/30',
-                report.resolved && 'border-l-4 border-l-green-500 opacity-75'
+                report.carCheck === 'NOK' && !report.resolved && 'border-l-4 border-l-red-500 bg-red-50/30',
+                report.carCheck === 'NOK' && report.resolved && 'border-l-4 border-l-green-500 opacity-75',
+                report.carCheck === 'OK' && 'border-l-4 border-l-green-500 bg-green-50/20'
               )}
             >
               <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
@@ -176,6 +216,14 @@ export default function HlaseniPage() {
                     <span className="text-sm text-gray-500">
                       {format(new Date(report.route.date), 'd. MMMM yyyy', { locale: cs })}
                     </span>
+                    <span className={cn(
+                      'px-2 py-0.5 rounded-full text-xs font-bold w-fit',
+                      report.carCheck === 'OK'
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-red-100 text-red-700'
+                    )}>
+                      {report.carCheck}
+                    </span>
                   </div>
 
                   <div className="mt-1 text-sm text-gray-600">
@@ -188,7 +236,11 @@ export default function HlaseniPage() {
                     </div>
                   )}
 
-                  {report.carCheckNote && (
+                  <div className="text-sm text-gray-500">
+                    Skutečně ujeté km: <span className="font-medium">{report.actualKm} km</span>
+                  </div>
+
+                  {report.carCheck === 'NOK' && report.carCheckNote && (
                     <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
                       <div className="text-xs font-medium text-red-800 mb-1">Popis problému:</div>
                       <p className="text-sm text-red-700 whitespace-pre-wrap">
@@ -197,7 +249,7 @@ export default function HlaseniPage() {
                     </div>
                   )}
 
-                  {!report.carCheckNote && (
+                  {report.carCheck === 'NOK' && !report.carCheckNote && (
                     <div className="mt-2 p-3 bg-orange-50 border border-orange-200 rounded-lg">
                       <p className="text-sm text-orange-700">
                         Řidič nahlásil problém bez popisu.
@@ -210,24 +262,26 @@ export default function HlaseniPage() {
                   </div>
                 </div>
 
-                {/* Action button */}
-                <div className="flex-shrink-0 self-start">
-                  {!report.resolved ? (
-                    <button
-                      onClick={() => handleToggleResolved(report.id, true)}
-                      className="px-4 py-2 bg-green-100 text-green-700 rounded-lg text-sm font-medium hover:bg-green-200 transition-colors whitespace-nowrap"
-                    >
-                      Vyřešit
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => handleToggleResolved(report.id, false)}
-                      className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors whitespace-nowrap"
-                    >
-                      Znovu otevřít
-                    </button>
-                  )}
-                </div>
+                {/* Action button - jen pro NOK */}
+                {report.carCheck === 'NOK' && (
+                  <div className="flex-shrink-0 self-start">
+                    {!report.resolved ? (
+                      <button
+                        onClick={() => handleToggleResolved(report.id, true)}
+                        className="px-4 py-2 bg-green-100 text-green-700 rounded-lg text-sm font-medium hover:bg-green-200 transition-colors whitespace-nowrap"
+                      >
+                        Vyřešit
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleToggleResolved(report.id, false)}
+                        className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors whitespace-nowrap"
+                      >
+                        Znovu otevřít
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           ))}
