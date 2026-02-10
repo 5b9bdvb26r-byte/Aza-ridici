@@ -118,6 +118,8 @@ model Route {
   status         String   @default("PLANNED") // PLANNED, IN_PROGRESS, COMPLETED
   confirmed      Boolean  @default(false) // Potvrzeno řidičem
   complaintCount Int      @default(0)    // počet reklamací na trase
+  fuelCost       Float    @default(0)    // náklady na naftu (Kč)
+  driverPay      Float    @default(0)    // výplata řidiče (Kč)
   createdAt      DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -128,8 +130,23 @@ model Route {
   vehicle      Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
 
   dailyReport  DailyReport?
+  orders       Order[]
 
   @@map("routes")
+}
+
+model Order {
+  id           String   @id @default(cuid())
+  routeId      String
+  orderNumber  String   // číslo objednávky
+  price        Float    @default(0) // cena objednávky (Kč)
+  deliveryTime String?  // čas doručení
+  note         String?  // poznámka
+  createdAt    DateTime @default(now())
+
+  route        Route    @relation(fields: [routeId], references: [id], onDelete: Cascade)
+
+  @@map("orders")
 }
 
 model NoteCategory {

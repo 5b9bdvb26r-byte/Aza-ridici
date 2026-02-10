@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "node -e \"try{require('fs').rmSync('node_modules/.prisma',{recursive:true,force:true})}catch(e){}\" && npx prisma generate && next build",
-    "vercel-build": "node -e \"try{require('fs').rmSync('node_modules/.prisma',{recursive:true,force:true})}catch(e){}\" && npx prisma generate && next build",
+    "build": "node scripts/clean-prisma.js && npx prisma generate && next build",
+    "vercel-build": "node scripts/clean-prisma.js && npx prisma generate && next build",
     "postinstall": "npx prisma generate || true",
     "start": "next start",
     "lint": "next lint",
@@ -15,31 +15,31 @@
     "db:studio": "prisma studio"
   },
   "dependencies": {
-    "next": "14.2.3",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "next-auth": "^4.24.7",
-    "@prisma/client": "5.22.0",
-    "prisma": "5.22.0",
     "@auth/prisma-adapter": "^2.0.0",
+    "@prisma/client": "^5.22.0",
     "bcryptjs": "^2.4.3",
+    "clsx": "^2.1.1",
     "date-fns": "^3.6.0",
     "date-fns-tz": "^3.1.3",
-    "zod": "^3.23.8",
-    "clsx": "^2.1.1",
-    "tailwind-merge": "^2.3.0"
+    "next": "14.2.3",
+    "next-auth": "^4.24.7",
+    "prisma": "5.22.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwind-merge": "^2.3.0",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.12.12",
     "@types/react": "^18.3.2",
     "@types/react-dom": "^18.3.0",
-    "@types/bcryptjs": "^2.4.6",
-    "typescript": "^5.4.5",
-    "tsx": "^4.11.0",
-    "tailwindcss": "^3.4.3",
-    "postcss": "^8.4.38",
     "autoprefixer": "^10.4.19",
     "eslint": "^8.57.0",
-    "eslint-config-next": "14.2.3"
+    "eslint-config-next": "14.2.3",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.3",
+    "tsx": "^4.11.0",
+    "typescript": "^5.4.5"
   }
 }

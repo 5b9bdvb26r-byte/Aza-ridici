@@ -52,7 +52,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { name, mapUrl, plannedKm, actualKm, date, driverId, vehicleId, note, status, complaintCount } = body;
+    const { name, mapUrl, plannedKm, actualKm, date, driverId, vehicleId, note, status, complaintCount, fuelCost, driverPay, orders } = body;
 
     // Načíst aktuální stav trasy
     const currentRoute = await prisma.route.findUnique({
@@ -61,6 +61,11 @@ export async function PUT(
 
     if (!currentRoute) {
       return NextResponse.json({ error: 'Trasa nenalezena' }, { status: 404 });
+    }
+
+    // Pokud přišly objednávky, smazat staré a vytvořit nové
+    if (orders !== undefined) {
+      await prisma.order.deleteMany({ where: { routeId: params.id } });
     }
 
     // Aktualizovat trasu
@@ -77,10 +82,21 @@ export async function PUT(
         note: note || null,
         status: status || undefined,
         complaintCount: complaintCount !== undefined ? parseInt(complaintCount) : undefined,
+        fuelCost: fuelCost !== undefined ? parseFloat(fuelCost) : undefined,
+        driverPay: driverPay !== undefined ? parseFloat(driverPay) : undefined,
+        orders: orders && orders.length > 0 ? {
+          create: orders.map((o: { orderNumber: string; price: string; deliveryTime: string; note: string }) => ({
+            orderNumber: o.orderNumber,
+            price: o.price ? parseFloat(o.price) : 0,
+            deliveryTime: o.deliveryTime || null,
+            note: o.note || null,
+          })),
+        } : undefined,
       },
       include: {
         driver: { select: { id: true, name: true, color: true } },
         vehicle: { select: { id: true, name: true, spz: true } },
+        orders: { orderBy: { createdAt: 'asc' } },
       },
     });
 
