@@ -10,6 +10,7 @@ interface Report {
   id: string;
   routeId: string;
   actualKm: number;
+  fuelCost: number;
   carCheck: string;
   carCheckNote: string | null;
   createdAt: string;
@@ -158,6 +159,9 @@ export default function DriverHlaseniPage() {
                         <span className="text-gray-400 ml-1">(plán: {report.route.plannedKm} km)</span>
                       )}
                     </span>
+                    {report.fuelCost > 0 && (
+                      <span>Nafta: {report.fuelCost.toLocaleString('cs-CZ')} Kč</span>
+                    )}
                   </div>
 
                   {report.carCheck === 'NOK' && report.carCheckNote && (

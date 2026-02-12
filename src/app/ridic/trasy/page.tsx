@@ -41,6 +41,7 @@ interface DailyReport {
   id: string;
   routeId: string;
   actualKm: number;
+  fuelCost: number;
   carCheck: string;
   carCheckNote: string | null;
 }
@@ -55,6 +56,7 @@ export default function DriverRoutesPage() {
   const [activeReport, setActiveReport] = useState<string | null>(null);
   const [reportForm, setReportForm] = useState({
     actualKm: '',
+    fuelCost: '',
     carCheck: 'OK',
     carCheckNote: '',
   });
@@ -114,6 +116,7 @@ export default function DriverRoutesPage() {
     setActiveReport(route.id);
     setReportForm({
       actualKm: route.plannedKm?.toString() || '',
+      fuelCost: '',
       carCheck: 'OK',
       carCheckNote: '',
     });
@@ -133,6 +136,7 @@ export default function DriverRoutesPage() {
         body: JSON.stringify({
           routeId: activeReport,
           actualKm: reportForm.actualKm,
+          fuelCost: reportForm.fuelCost,
           carCheck: reportForm.carCheck,
           carCheckNote: reportForm.carCheck === 'NOK' ? reportForm.carCheckNote : null,
         }),
@@ -323,6 +327,21 @@ export default function DriverRoutesPage() {
                       </div>
 
                       <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Nafta (Kč)
+                        </label>
+                        <input
+                          type="number"
+                          value={reportForm.fuelCost}
+                          onChange={(e) => setReportForm({ ...reportForm, fuelCost: e.target.value })}
+                          className="input w-full"
+                          placeholder="Kolik jste natankovali v Kč"
+                          min="0"
+                          step="1"
+                        />
+                      </div>
+
+                      <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Kontrola auta
                         </label>
@@ -482,6 +501,11 @@ export default function DriverRoutesPage() {
                           </span>
                         )}
                       </div>
+                      {report && report.fuelCost > 0 && (
+                        <span className="text-sm text-gray-500">
+                          Nafta: {report.fuelCost.toLocaleString('cs-CZ')} Kč
+                        </span>
+                      )}
                       {report?.carCheckNote && (
                         <p className="text-red-500 text-xs mt-1">{report.carCheckNote}</p>
                       )}

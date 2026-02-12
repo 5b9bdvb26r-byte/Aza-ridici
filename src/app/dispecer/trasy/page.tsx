@@ -94,8 +94,7 @@ export default function RoutesPage() {
     note: '',
     status: 'PLANNED',
     complaintCount: '0',
-    fuelCost: '',
-    driverPay: '',
+    driverPay: '2500',
   });
   const [orders, setOrders] = useState<Order[]>([emptyOrder()]);
   const [isSaving, setIsSaving] = useState(false);
@@ -221,9 +220,8 @@ export default function RoutesPage() {
 
   // Výpočty
   const ordersTotal = orders.reduce((sum, o) => sum + (parseFloat(o.price) || 0), 0);
-  const fuelCostNum = parseFloat(formData.fuelCost) || 0;
   const driverPayNum = parseFloat(formData.driverPay) || 0;
-  const profit = ordersTotal - fuelCostNum - driverPayNum;
+  const profit = ordersTotal - driverPayNum;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -271,8 +269,7 @@ export default function RoutesPage() {
       note: route.note || '',
       status: route.status,
       complaintCount: route.complaintCount?.toString() || '0',
-      fuelCost: route.fuelCost ? route.fuelCost.toString() : '',
-      driverPay: route.driverPay ? route.driverPay.toString() : '',
+      driverPay: route.driverPay ? route.driverPay.toString() : '2500',
     });
     // Načíst objednávky
     if (route.orders && route.orders.length > 0) {
@@ -321,8 +318,7 @@ export default function RoutesPage() {
       note: '',
       status: 'PLANNED',
       complaintCount: '0',
-      fuelCost: '',
-      driverPay: '',
+      driverPay: '2500',
     });
     setOrders([emptyOrder()]);
   };
@@ -787,19 +783,7 @@ export default function RoutesPage() {
 
               {/* Náklady a zisk */}
               <div className="mt-4 pt-4 border-t border-gray-200">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Nafta (Kč)</label>
-                    <input
-                      type="number"
-                      value={formData.fuelCost}
-                      onChange={(e) => setFormData({ ...formData, fuelCost: e.target.value })}
-                      className="input text-sm mt-1"
-                      placeholder="0"
-                      min="0"
-                      step="0.01"
-                    />
-                  </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="text-sm font-medium text-gray-600">Výplata řidiče (Kč)</label>
                     <input
@@ -807,10 +791,11 @@ export default function RoutesPage() {
                       value={formData.driverPay}
                       onChange={(e) => setFormData({ ...formData, driverPay: e.target.value })}
                       className="input text-sm mt-1"
-                      placeholder="0"
+                      placeholder="2500"
                       min="0"
-                      step="0.01"
+                      step="1"
                     />
+                    <p className="text-xs text-gray-400 mt-1">Výchozí: 2 500 Kč</p>
                   </div>
                   <div className="flex flex-col justify-end">
                     <div className="bg-gray-50 rounded-lg p-3 text-sm space-y-1">
@@ -819,15 +804,15 @@ export default function RoutesPage() {
                         <span className="font-medium">{ordersTotal.toLocaleString('cs-CZ')} Kč</span>
                       </div>
                       <div className="flex justify-between text-gray-600">
-                        <span>Nafta:</span>
-                        <span className="font-medium text-red-600">-{fuelCostNum.toLocaleString('cs-CZ')} Kč</span>
-                      </div>
-                      <div className="flex justify-between text-gray-600">
                         <span>Výplata:</span>
                         <span className="font-medium text-red-600">-{driverPayNum.toLocaleString('cs-CZ')} Kč</span>
                       </div>
+                      <div className="flex justify-between text-gray-500 text-xs">
+                        <span>Nafta:</span>
+                        <span className="italic">vyplní řidič po jízdě</span>
+                      </div>
                       <div className="flex justify-between pt-1 border-t border-gray-300 font-bold">
-                        <span>Zisk:</span>
+                        <span>Zisk (bez nafty):</span>
                         <span className={profit >= 0 ? 'text-green-700' : 'text-red-700'}>
                           {profit.toLocaleString('cs-CZ')} Kč
                         </span>
@@ -1014,8 +999,8 @@ function RouteCard({
   onStatusChange: (route: Route, status: string) => void;
 }) {
   const ordersTotal = route.orders?.reduce((sum, o) => sum + (parseFloat(o.price?.toString()) || 0), 0) || 0;
-  const profit = ordersTotal - (route.fuelCost || 0) - (route.driverPay || 0);
-  const hasFinancials = ordersTotal > 0 || route.fuelCost > 0 || route.driverPay > 0;
+  const profit = ordersTotal - (route.driverPay || 0);
+  const hasFinancials = ordersTotal > 0 || route.driverPay > 0;
 
   return (
     <div className="p-3 sm:p-4 bg-white rounded-lg border border-gray-200">
@@ -1077,9 +1062,6 @@ function RouteCard({
                 <span className="text-gray-500">
                   {route.orders.length} obj. | {ordersTotal.toLocaleString('cs-CZ')} Kč
                 </span>
-              )}
-              {route.fuelCost > 0 && (
-                <span className="text-red-600">Nafta: -{route.fuelCost.toLocaleString('cs-CZ')} Kč</span>
               )}
               {route.driverPay > 0 && (
                 <span className="text-red-600">Výplata: -{route.driverPay.toLocaleString('cs-CZ')} Kč</span>

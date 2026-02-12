@@ -218,6 +218,7 @@ model DailyReport {
   routeId      String   @unique
   driverId     String
   actualKm     Int
+  fuelCost     Float    @default(0) // náklady na naftu (Kč) - vyplní řidič po jízdě
   carCheck     String   @default("OK")
   carCheckNote String?
   resolved     Boolean  @default(false) // Vyřešeno dispečerem (pro NOK hlášení)

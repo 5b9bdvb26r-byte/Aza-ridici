@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { routeId, actualKm, carCheck, carCheckNote } = body;
+    const { routeId, actualKm, fuelCost, carCheck, carCheckNote } = body;
 
     if (!routeId || actualKm === undefined) {
       return NextResponse.json(
@@ -82,22 +82,26 @@ export async function POST(request: Request) {
 
     // Vytvořit report a aktualizovat trasu v transakci
     const result = await prisma.$transaction(async (tx) => {
+      const fuelCostValue = fuelCost ? parseFloat(fuelCost) : 0;
+
       // Vytvořit denní report
       const report = await tx.dailyReport.create({
         data: {
           routeId,
           driverId: session.user.id,
           actualKm: kmValue,
+          fuelCost: fuelCostValue,
           carCheck: carCheck || 'OK',
           carCheckNote: carCheck === 'NOK' ? (carCheckNote || null) : null,
         },
       });
 
-      // Aktualizovat skutečné km na trase a nastavit jako dokončenou
+      // Aktualizovat skutečné km na trase, naftu a nastavit jako dokončenou
       await tx.route.update({
         where: { id: routeId },
         data: {
           actualKm: kmValue,
+          fuelCost: fuelCostValue,
           status: 'COMPLETED',
         },
       });
