@@ -5,7 +5,6 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { startOfDay } from 'date-fns';
 
 // GET - Počet tras, které vyžadují report od řidiče
 export async function GET() {
@@ -16,15 +15,12 @@ export async function GET() {
       return NextResponse.json({ error: 'Neautorizováno' }, { status: 401 });
     }
 
-    const today = startOfDay(new Date());
-
     // Trasy přiřazené tomuto řidiči, které jsou dnes nebo v minulosti,
-    // nejsou COMPLETED a nemají denní report
+    // a nemají denní report (bez ohledu na status - i COMPLETED trasy bez reportu se počítají)
     const count = await prisma.route.count({
       where: {
         driverId: session.user.id,
         date: { lte: new Date() },
-        status: { not: 'COMPLETED' },
         dailyReport: null,
       },
     });

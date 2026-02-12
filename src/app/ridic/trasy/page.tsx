@@ -158,7 +158,9 @@ export default function DriverRoutesPage() {
   const needsReport = routes.filter((r) => {
     const routeDate = startOfDay(new Date(r.date));
     const isPastOrToday = isBefore(routeDate, today) || isToday(new Date(r.date));
-    return isPastOrToday && !hasReport(r.id) && r.status !== 'COMPLETED';
+    // Trasa potřebuje report pokud: datum je dnes nebo v minulosti A nemá vyplněný report
+    // (bez ohledu na status - i COMPLETED trasy bez reportu potřebují vyplnit)
+    return isPastOrToday && !hasReport(r.id);
   });
 
   const upcomingRoutes = routes.filter((r) => {
@@ -166,7 +168,7 @@ export default function DriverRoutesPage() {
     return !isBefore(routeDate, today) && !isToday(new Date(r.date));
   });
 
-  const completedRoutes = routes.filter((r) => r.status === 'COMPLETED' || hasReport(r.id));
+  const completedRoutes = routes.filter((r) => hasReport(r.id));
 
   if (isLoading) {
     return (
