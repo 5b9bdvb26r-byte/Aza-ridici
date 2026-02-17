@@ -52,7 +52,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { name, mapUrl, plannedKm, actualKm, date, arrivalFrom, arrivalTo, driverId, vehicleId, note, status, complaintCount, fuelCost, driverPay, orders } = body;
+    const { name, mapUrl, plannedKm, actualKm, date, driverId, vehicleId, note, status, complaintCount, fuelCost, driverPay, orders } = body;
 
     // Načíst aktuální stav trasy
     const currentRoute = await prisma.route.findUnique({
@@ -77,8 +77,6 @@ export async function PUT(
         plannedKm: plannedKm ? parseInt(plannedKm) : null,
         actualKm: actualKm ? parseInt(actualKm) : null,
         date: date ? new Date(date) : undefined,
-        arrivalFrom: arrivalFrom !== undefined ? (arrivalFrom || null) : undefined,
-        arrivalTo: arrivalTo !== undefined ? (arrivalTo || null) : undefined,
         driverId: driverId || null,
         vehicleId: vehicleId || null,
         note: note || null,
@@ -87,10 +85,11 @@ export async function PUT(
         fuelCost: fuelCost !== undefined ? parseFloat(fuelCost) : undefined,
         driverPay: driverPay !== undefined ? parseFloat(driverPay) : undefined,
         orders: orders && orders.length > 0 ? {
-          create: orders.map((o: { orderNumber: string; price: string; deliveryTime: string; note: string }) => ({
+          create: orders.map((o: { orderNumber: string; price: string; deliveryTime: string; deliveryTimeTo: string; note: string }) => ({
             orderNumber: o.orderNumber,
             price: o.price ? parseFloat(o.price) : 0,
             deliveryTime: o.deliveryTime || null,
+            deliveryTimeTo: o.deliveryTimeTo || null,
             note: o.note || null,
           })),
         } : undefined,

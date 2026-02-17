@@ -142,7 +142,8 @@ model Order {
   routeId      String
   orderNumber  String   // číslo objednávky
   price        Float    @default(0) // cena objednávky (Kč)
-  deliveryTime String?  // čas doručení
+  deliveryTime   String?  // čas doručení OD
+  deliveryTimeTo String?  // čas doručení DO
   note         String?  // poznámka
   createdAt    DateTime @default(now())
 

@@ -26,8 +26,6 @@ interface Route {
   plannedKm: number | null;
   actualKm: number | null;
   date: string;
-  arrivalFrom: string | null;
-  arrivalTo: string | null;
   note: string | null;
   status: string;
   confirmed: boolean;
@@ -267,11 +265,6 @@ export default function DriverRoutesPage() {
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-500 mt-1">
                         {route.vehicle && <span>{route.vehicle.name} ({route.vehicle.spz})</span>}
                         {route.plannedKm && <span>Plan: {route.plannedKm} km</span>}
-                        {route.arrivalFrom && (
-                          <span className="text-primary-600 font-medium">
-                            📦 {route.arrivalFrom}{route.arrivalTo ? ` - ${route.arrivalTo}` : ''}
-                          </span>
-                        )}
                       </div>
                       {route.mapUrl && (
                         <a
@@ -441,11 +434,6 @@ export default function DriverRoutesPage() {
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-500 mt-1">
                       {route.vehicle && <span>{route.vehicle.name} ({route.vehicle.spz})</span>}
                       {route.plannedKm && <span>Plan: {route.plannedKm} km</span>}
-                      {route.arrivalFrom && (
-                        <span className="text-primary-600 font-medium">
-                          📦 {route.arrivalFrom}{route.arrivalTo ? ` - ${route.arrivalTo}` : ''}
-                        </span>
-                      )}
                     </div>
                     {route.mapUrl && (
                       <a

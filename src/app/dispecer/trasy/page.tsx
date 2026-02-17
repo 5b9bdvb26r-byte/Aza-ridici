@@ -22,6 +22,7 @@ interface Order {
   orderNumber: string;
   price: string;
   deliveryTime: string;
+  deliveryTimeTo: string;
   note: string;
 }
 
@@ -41,8 +42,6 @@ interface Route {
   plannedKm: number | null;
   actualKm: number | null;
   date: string;
-  arrivalFrom: string | null;
-  arrivalTo: string | null;
   note: string | null;
   status: string;
   confirmed: boolean;
@@ -74,6 +73,7 @@ const emptyOrder = (): Order => ({
   orderNumber: '',
   price: '',
   deliveryTime: '',
+  deliveryTimeTo: '',
   note: '',
 });
 
@@ -93,8 +93,6 @@ export default function RoutesPage() {
     plannedKm: '',
     actualKm: '',
     date: '',
-    arrivalFrom: '',
-    arrivalTo: '',
     driverId: '',
     vehicleId: '',
     note: '',
@@ -307,8 +305,6 @@ export default function RoutesPage() {
       plannedKm: route.plannedKm?.toString() || '',
       actualKm: route.actualKm?.toString() || '',
       date: route.date.split('T')[0],
-      arrivalFrom: route.arrivalFrom || '',
-      arrivalTo: route.arrivalTo || '',
       driverId: route.driver?.id || '',
       vehicleId: route.vehicle?.id || '',
       note: route.note || '',
@@ -319,7 +315,7 @@ export default function RoutesPage() {
     if (route.orders && route.orders.length > 0) {
       setOrders(route.orders.map((o) => ({
         id: o.id, orderNumber: o.orderNumber, price: o.price?.toString() || '',
-        deliveryTime: o.deliveryTime || '', note: o.note || '',
+        deliveryTime: o.deliveryTime || '', deliveryTimeTo: o.deliveryTimeTo || '', note: o.note || '',
       })));
     } else {
       setOrders([emptyOrder()]);
@@ -342,7 +338,7 @@ export default function RoutesPage() {
     setShowForm(false);
     setEditingRoute(null);
     setFormData({
-      name: '', mapUrl: '', plannedKm: '', actualKm: '', date: '', arrivalFrom: '', arrivalTo: '', driverId: '',
+      name: '', mapUrl: '', plannedKm: '', actualKm: '', date: '', driverId: '',
       vehicleId: '', note: '', status: 'PLANNED', complaintCount: '0', driverPay: '2500',
     });
     setOrders([emptyOrder()]);
@@ -552,69 +548,6 @@ export default function RoutesPage() {
                   className="input" required />
               </div>
 
-              {/* Čas doručení */}
-              <div>
-                <label className="label">Přibližný čas doručení</label>
-                <div className="flex items-center gap-2">
-                  <select
-                    value={formData.arrivalFrom}
-                    onChange={(e) => {
-                      const from = e.target.value;
-                      // Automaticky přednastavit "do" o 1 hodinu
-                      let autoTo = '';
-                      if (from) {
-                        const [h, m] = from.split(':').map(Number);
-                        const toH = h + 1;
-                        if (toH <= 23) {
-                          autoTo = `${String(toH).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-                        }
-                      }
-                      setFormData({ ...formData, arrivalFrom: from, arrivalTo: formData.arrivalTo || autoTo });
-                    }}
-                    className="input flex-1"
-                  >
-                    <option value="">Od</option>
-                    {Array.from({ length: 30 }, (_, i) => {
-                      const h = Math.floor(i / 2) + 5;
-                      const m = (i % 2) * 30;
-                      const val = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-                      return <option key={val} value={val}>{val}</option>;
-                    })}
-                  </select>
-                  <span className="text-gray-400 font-medium">—</span>
-                  <select
-                    value={formData.arrivalTo}
-                    onChange={(e) => setFormData({ ...formData, arrivalTo: e.target.value })}
-                    className="input flex-1"
-                  >
-                    <option value="">Do</option>
-                    {formData.arrivalFrom ? (() => {
-                      const [fromH, fromM] = formData.arrivalFrom.split(':').map(Number);
-                      const options = [];
-                      for (let offset = 1; offset <= 8; offset++) {
-                        const totalMin = (fromH * 60 + fromM) + offset * 30;
-                        const h = Math.floor(totalMin / 60);
-                        const m = totalMin % 60;
-                        if (h > 23) break;
-                        const val = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-                        options.push(<option key={val} value={val}>{val}</option>);
-                      }
-                      return options;
-                    })() : (
-                      Array.from({ length: 30 }, (_, i) => {
-                        const h = Math.floor(i / 2) + 5;
-                        const m = (i % 2) * 30;
-                        const val = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-                        return <option key={val} value={val}>{val}</option>;
-                      })
-                    )}
-                  </select>
-                </div>
-                {formData.arrivalFrom && formData.arrivalTo && (
-                  <p className="text-xs text-gray-500 mt-1">Doručení přibližně {formData.arrivalFrom} - {formData.arrivalTo}</p>
-                )}
-              </div>
-
               {/* Výběr řidiče */}
               <div className="md:col-span-2">
                 <label className="label">
@@ -736,7 +669,51 @@ export default function RoutesPage() {
                       <tr key={i} className="border-b border-gray-100">
                         <td className="py-1.5 px-2"><input type="text" value={order.orderNumber} onChange={(e) => updateOrder(i, 'orderNumber', e.target.value)} className="input text-sm py-1.5" placeholder="OBJ-001" /></td>
                         <td className="py-1.5 px-2"><input type="number" value={order.price} onChange={(e) => updateOrder(i, 'price', e.target.value)} className="input text-sm py-1.5" placeholder="0" min="0" step="0.01" /></td>
-                        <td className="py-1.5 px-2"><input type="text" value={order.deliveryTime} onChange={(e) => updateOrder(i, 'deliveryTime', e.target.value)} className="input text-sm py-1.5" placeholder="10:00" /></td>
+                        <td className="py-1.5 px-2">
+                          <div className="flex items-center gap-1">
+                            <select value={order.deliveryTime} onChange={(e) => {
+                              const from = e.target.value;
+                              const newOrders = [...orders];
+                              newOrders[i] = { ...newOrders[i], deliveryTime: from };
+                              // Automaticky přednastavit "do" o 1h pokud ještě není
+                              if (from && !newOrders[i].deliveryTimeTo) {
+                                const [h, m] = from.split(':').map(Number);
+                                if (h + 1 <= 23) {
+                                  newOrders[i].deliveryTimeTo = `${String(h + 1).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                                }
+                              }
+                              setOrders(newOrders);
+                            }} className="input text-sm py-1.5 w-[80px]">
+                              <option value="">Od</option>
+                              {Array.from({ length: 30 }, (_, j) => {
+                                const h = Math.floor(j / 2) + 5;
+                                const m = (j % 2) * 30;
+                                const val = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                                return <option key={val} value={val}>{val}</option>;
+                              })}
+                            </select>
+                            <span className="text-gray-400">-</span>
+                            <select value={order.deliveryTimeTo} onChange={(e) => updateOrder(i, 'deliveryTimeTo', e.target.value)} className="input text-sm py-1.5 w-[80px]">
+                              <option value="">Do</option>
+                              {order.deliveryTime ? (() => {
+                                const [fH, fM] = order.deliveryTime.split(':').map(Number);
+                                const opts = [];
+                                for (let off = 1; off <= 8; off++) {
+                                  const tot = (fH * 60 + fM) + off * 30;
+                                  const h = Math.floor(tot / 60); const m = tot % 60;
+                                  if (h > 23) break;
+                                  const v = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                                  opts.push(<option key={v} value={v}>{v}</option>);
+                                }
+                                return opts;
+                              })() : Array.from({ length: 30 }, (_, j) => {
+                                const h = Math.floor(j / 2) + 5; const m = (j % 2) * 30;
+                                const v = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                                return <option key={v} value={v}>{v}</option>;
+                              })}
+                            </select>
+                          </div>
+                        </td>
                         <td className="py-1.5 px-2"><input type="text" value={order.note} onChange={(e) => updateOrder(i, 'note', e.target.value)} className="input text-sm py-1.5" placeholder="Poznámka" /></td>
                         <td className="py-1.5 px-2">
                           <button type="button" onClick={() => removeOrderRow(i)} className="p-1 text-gray-400 hover:text-red-500 transition-colors" title="Odebrat">
@@ -758,8 +735,49 @@ export default function RoutesPage() {
                     <div className="grid grid-cols-2 gap-2">
                       <div><label className="text-xs text-gray-500">Číslo obj.</label><input type="text" value={order.orderNumber} onChange={(e) => updateOrder(i, 'orderNumber', e.target.value)} className="input text-sm py-1.5" placeholder="OBJ-001" /></div>
                       <div><label className="text-xs text-gray-500">Cena (Kč)</label><input type="number" value={order.price} onChange={(e) => updateOrder(i, 'price', e.target.value)} className="input text-sm py-1.5" placeholder="0" min="0" step="0.01" /></div>
-                      <div><label className="text-xs text-gray-500">Čas doručení</label><input type="text" value={order.deliveryTime} onChange={(e) => updateOrder(i, 'deliveryTime', e.target.value)} className="input text-sm py-1.5" placeholder="10:00" /></div>
-                      <div><label className="text-xs text-gray-500">Poznámka</label><input type="text" value={order.note} onChange={(e) => updateOrder(i, 'note', e.target.value)} className="input text-sm py-1.5" placeholder="Poznámka" /></div>
+                      <div className="col-span-2">
+                        <label className="text-xs text-gray-500">Čas doručení</label>
+                        <div className="flex items-center gap-1">
+                          <select value={order.deliveryTime} onChange={(e) => {
+                            const from = e.target.value;
+                            const newOrders = [...orders];
+                            newOrders[i] = { ...newOrders[i], deliveryTime: from };
+                            if (from && !newOrders[i].deliveryTimeTo) {
+                              const [h, m] = from.split(':').map(Number);
+                              if (h + 1 <= 23) newOrders[i].deliveryTimeTo = `${String(h + 1).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                            }
+                            setOrders(newOrders);
+                          }} className="input text-sm py-1.5 flex-1">
+                            <option value="">Od</option>
+                            {Array.from({ length: 30 }, (_, j) => {
+                              const h = Math.floor(j / 2) + 5; const m = (j % 2) * 30;
+                              const v = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                              return <option key={v} value={v}>{v}</option>;
+                            })}
+                          </select>
+                          <span className="text-gray-400">-</span>
+                          <select value={order.deliveryTimeTo} onChange={(e) => updateOrder(i, 'deliveryTimeTo', e.target.value)} className="input text-sm py-1.5 flex-1">
+                            <option value="">Do</option>
+                            {order.deliveryTime ? (() => {
+                              const [fH, fM] = order.deliveryTime.split(':').map(Number);
+                              const opts = [];
+                              for (let off = 1; off <= 8; off++) {
+                                const tot = (fH * 60 + fM) + off * 30;
+                                const h = Math.floor(tot / 60); const m = tot % 60;
+                                if (h > 23) break;
+                                const v = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                                opts.push(<option key={v} value={v}>{v}</option>);
+                              }
+                              return opts;
+                            })() : Array.from({ length: 30 }, (_, j) => {
+                              const h = Math.floor(j / 2) + 5; const m = (j % 2) * 30;
+                              const v = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                              return <option key={v} value={v}>{v}</option>;
+                            })}
+                          </select>
+                        </div>
+                      </div>
+                      <div className="col-span-2"><label className="text-xs text-gray-500">Poznámka</label><input type="text" value={order.note} onChange={(e) => updateOrder(i, 'note', e.target.value)} className="input text-sm py-1.5" placeholder="Poznámka" /></div>
                     </div>
                   </div>
                 ))}
@@ -1146,11 +1164,6 @@ export default function RoutesPage() {
                           </div>
                           <div style={{ fontSize: '10pt', color: '#555' }}>
                             {format(new Date(route.date), 'EEEE d. MMMM yyyy', { locale: cs })}
-                            {route.arrivalFrom && (
-                              <span style={{ marginLeft: '10px', fontWeight: 'bold', color: '#000' }}>
-                                Doručení: {route.arrivalFrom}{route.arrivalTo ? ` - ${route.arrivalTo}` : ''}
-                              </span>
-                            )}
                           </div>
                         </div>
                         <div style={{ textAlign: 'right', fontSize: '10pt' }}>
@@ -1190,7 +1203,7 @@ export default function RoutesPage() {
                             {route.orders.map((order, i) => (
                               <tr key={order.id || i}>
                                 <td style={{ border: '1px solid #333', padding: '4px 8px', fontSize: '10pt', fontFamily: 'monospace' }}>{order.orderNumber}</td>
-                                <td style={{ border: '1px solid #333', padding: '4px 8px', fontSize: '10pt' }}>{order.deliveryTime || '-'}</td>
+                                <td style={{ border: '1px solid #333', padding: '4px 8px', fontSize: '10pt' }}>{order.deliveryTime ? `${order.deliveryTime}${order.deliveryTimeTo ? ` - ${order.deliveryTimeTo}` : ''}` : '-'}</td>
                                 <td style={{ border: '1px solid #333', padding: '4px 8px', fontSize: '10pt' }}>{order.note || '-'}</td>
                                 <td style={{ border: '1px solid #333', padding: '4px 8px', fontSize: '10pt', textAlign: 'right', fontWeight: 'bold' }}>
                                   {parseFloat(order.price?.toString() || '0').toLocaleString('cs-CZ')} Kč
@@ -1323,11 +1336,6 @@ function RouteCard({
               </span>
             ) : (
               <span className="text-orange-600 font-medium">⚠ Nepřiřazen</span>
-            )}
-            {route.arrivalFrom && (
-              <span className="text-primary-600 font-medium">
-                📦 {route.arrivalFrom}{route.arrivalTo ? ` - ${route.arrivalTo}` : ''}
-              </span>
             )}
             {route.vehicle && <span>{route.vehicle.name} · {route.vehicle.spz}</span>}
             {(route.actualKm || route.plannedKm) && (
@@ -1497,7 +1505,7 @@ function RouteCard({
                   <div key={order.id || i} className="flex items-center justify-between text-sm bg-gray-50 rounded-lg px-3 py-2">
                     <div className="flex items-center gap-3">
                       <span className="font-mono font-medium text-gray-800">{order.orderNumber}</span>
-                      {order.deliveryTime && <span className="text-xs text-gray-400">{order.deliveryTime}</span>}
+                      {order.deliveryTime && <span className="text-xs text-gray-400">{order.deliveryTime}{order.deliveryTimeTo ? ` - ${order.deliveryTimeTo}` : ''}</span>}
                       {order.note && <span className="text-xs text-gray-400">{order.note}</span>}
                     </div>
                     <span className="font-medium text-gray-900">

@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, mapUrl, plannedKm, date, arrivalFrom, arrivalTo, driverId, vehicleId, note, complaintCount, fuelCost, driverPay, orders } = body;
+    const { name, mapUrl, plannedKm, date, driverId, vehicleId, note, complaintCount, fuelCost, driverPay, orders } = body;
 
     if (!name || !date) {
       return NextResponse.json(
@@ -83,8 +83,6 @@ export async function POST(request: NextRequest) {
         mapUrl: mapUrl || null,
         plannedKm: plannedKm ? parseInt(plannedKm) : null,
         date: new Date(date),
-        arrivalFrom: arrivalFrom || null,
-        arrivalTo: arrivalTo || null,
         driverId: driverId || null,
         vehicleId: vehicleId || null,
         note: note || null,
@@ -92,10 +90,11 @@ export async function POST(request: NextRequest) {
         fuelCost: fuelCost ? parseFloat(fuelCost) : 0,
         driverPay: driverPay ? parseFloat(driverPay) : 0,
         orders: orders && orders.length > 0 ? {
-          create: orders.map((o: { orderNumber: string; price: string; deliveryTime: string; note: string }) => ({
+          create: orders.map((o: { orderNumber: string; price: string; deliveryTime: string; deliveryTimeTo: string; note: string }) => ({
             orderNumber: o.orderNumber,
             price: o.price ? parseFloat(o.price) : 0,
             deliveryTime: o.deliveryTime || null,
+            deliveryTimeTo: o.deliveryTimeTo || null,
             note: o.note || null,
           })),
         } : undefined,
