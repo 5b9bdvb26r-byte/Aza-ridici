@@ -552,9 +552,9 @@ export default function RoutesPage() {
                   className="input" required />
               </div>
 
-              {/* Čas dojetí */}
+              {/* Čas doručení */}
               <div>
-                <label className="label">Přibližný čas dojetí</label>
+                <label className="label">Přibližný čas doručení</label>
                 <div className="flex items-center gap-2">
                   <select
                     value={formData.arrivalFrom}
@@ -611,7 +611,7 @@ export default function RoutesPage() {
                   </select>
                 </div>
                 {formData.arrivalFrom && formData.arrivalTo && (
-                  <p className="text-xs text-gray-500 mt-1">Řidič dorazí přibližně {formData.arrivalFrom} - {formData.arrivalTo}</p>
+                  <p className="text-xs text-gray-500 mt-1">Doručení přibližně {formData.arrivalFrom} - {formData.arrivalTo}</p>
                 )}
               </div>
 
@@ -1148,7 +1148,7 @@ export default function RoutesPage() {
                             {format(new Date(route.date), 'EEEE d. MMMM yyyy', { locale: cs })}
                             {route.arrivalFrom && (
                               <span style={{ marginLeft: '10px', fontWeight: 'bold', color: '#000' }}>
-                                Dojetí: {route.arrivalFrom}{route.arrivalTo ? ` - ${route.arrivalTo}` : ''}
+                                Doručení: {route.arrivalFrom}{route.arrivalTo ? ` - ${route.arrivalTo}` : ''}
                               </span>
                             )}
                           </div>
@@ -1326,7 +1326,7 @@ function RouteCard({
             )}
             {route.arrivalFrom && (
               <span className="text-primary-600 font-medium">
-                🕐 {route.arrivalFrom}{route.arrivalTo ? ` - ${route.arrivalTo}` : ''}
+                📦 {route.arrivalFrom}{route.arrivalTo ? ` - ${route.arrivalTo}` : ''}
               </span>
             )}
             {route.vehicle && <span>{route.vehicle.name} · {route.vehicle.spz}</span>}

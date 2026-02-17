@@ -269,7 +269,7 @@ export default function DriverRoutesPage() {
                         {route.plannedKm && <span>Plan: {route.plannedKm} km</span>}
                         {route.arrivalFrom && (
                           <span className="text-primary-600 font-medium">
-                            🕐 {route.arrivalFrom}{route.arrivalTo ? ` - ${route.arrivalTo}` : ''}
+                            📦 {route.arrivalFrom}{route.arrivalTo ? ` - ${route.arrivalTo}` : ''}
                           </span>
                         )}
                       </div>
@@ -443,7 +443,7 @@ export default function DriverRoutesPage() {
                       {route.plannedKm && <span>Plan: {route.plannedKm} km</span>}
                       {route.arrivalFrom && (
                         <span className="text-primary-600 font-medium">
-                          🕐 {route.arrivalFrom}{route.arrivalTo ? ` - ${route.arrivalTo}` : ''}
+                          📦 {route.arrivalFrom}{route.arrivalTo ? ` - ${route.arrivalTo}` : ''}
                         </span>
                       )}
                     </div>
