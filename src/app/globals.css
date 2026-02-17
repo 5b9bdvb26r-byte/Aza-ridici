@@ -12,6 +12,68 @@
   }
 }
 
+/* Tiskové styly */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 11pt !important;
+    line-height: 1.4 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Skrýt navigaci a elementy s no-print */
+  header, .no-print {
+    display: none !important;
+  }
+
+  .print-only, .print-area {
+    display: block !important;
+    position: relative !important;
+    visibility: visible !important;
+    width: 100% !important;
+  }
+
+  /* Stránkový zlom */
+  .print-page-break {
+    page-break-before: always;
+  }
+
+  /* Zabránit dělení karet */
+  .print-no-break {
+    page-break-inside: avoid;
+  }
+
+  /* Tiskové tabulky */
+  .print-table {
+    display: table !important;
+    width: 100% !important;
+    border-collapse: collapse;
+  }
+
+  .print-table th, .print-table td {
+    border: 1px solid #333 !important;
+    padding: 4px 8px !important;
+    text-align: left;
+    font-size: 10pt !important;
+  }
+
+  .print-table th {
+    background: #eee !important;
+    font-weight: bold !important;
+  }
+
+  @page {
+    margin: 15mm;
+  }
+}
+
+/* Normálně skrýt tiskový obsah */
+.print-only {
+  display: none;
+}
+
 @layer components {
   .btn {
     @apply inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
