@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, mapUrl, plannedKm, date, driverId, vehicleId, note, complaintCount, fuelCost, driverPay, orders } = body;
+    const { name, mapUrl, plannedKm, date, arrivalFrom, arrivalTo, driverId, vehicleId, note, complaintCount, fuelCost, driverPay, orders } = body;
 
     if (!name || !date) {
       return NextResponse.json(
@@ -83,6 +83,8 @@ export async function POST(request: NextRequest) {
         mapUrl: mapUrl || null,
         plannedKm: plannedKm ? parseInt(plannedKm) : null,
         date: new Date(date),
+        arrivalFrom: arrivalFrom || null,
+        arrivalTo: arrivalTo || null,
         driverId: driverId || null,
         vehicleId: vehicleId || null,
         note: note || null,

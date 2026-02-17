@@ -52,7 +52,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { name, mapUrl, plannedKm, actualKm, date, driverId, vehicleId, note, status, complaintCount, fuelCost, driverPay, orders } = body;
+    const { name, mapUrl, plannedKm, actualKm, date, arrivalFrom, arrivalTo, driverId, vehicleId, note, status, complaintCount, fuelCost, driverPay, orders } = body;
 
     // Načíst aktuální stav trasy
     const currentRoute = await prisma.route.findUnique({
@@ -77,6 +77,8 @@ export async function PUT(
         plannedKm: plannedKm ? parseInt(plannedKm) : null,
         actualKm: actualKm ? parseInt(actualKm) : null,
         date: date ? new Date(date) : undefined,
+        arrivalFrom: arrivalFrom !== undefined ? (arrivalFrom || null) : undefined,
+        arrivalTo: arrivalTo !== undefined ? (arrivalTo || null) : undefined,
         driverId: driverId || null,
         vehicleId: vehicleId || null,
         note: note || null,

@@ -41,6 +41,8 @@ interface Route {
   plannedKm: number | null;
   actualKm: number | null;
   date: string;
+  arrivalFrom: string | null;
+  arrivalTo: string | null;
   note: string | null;
   status: string;
   confirmed: boolean;
@@ -91,6 +93,8 @@ export default function RoutesPage() {
     plannedKm: '',
     actualKm: '',
     date: '',
+    arrivalFrom: '',
+    arrivalTo: '',
     driverId: '',
     vehicleId: '',
     note: '',
@@ -303,6 +307,8 @@ export default function RoutesPage() {
       plannedKm: route.plannedKm?.toString() || '',
       actualKm: route.actualKm?.toString() || '',
       date: route.date.split('T')[0],
+      arrivalFrom: route.arrivalFrom || '',
+      arrivalTo: route.arrivalTo || '',
       driverId: route.driver?.id || '',
       vehicleId: route.vehicle?.id || '',
       note: route.note || '',
@@ -336,7 +342,7 @@ export default function RoutesPage() {
     setShowForm(false);
     setEditingRoute(null);
     setFormData({
-      name: '', mapUrl: '', plannedKm: '', actualKm: '', date: '', driverId: '',
+      name: '', mapUrl: '', plannedKm: '', actualKm: '', date: '', arrivalFrom: '', arrivalTo: '', driverId: '',
       vehicleId: '', note: '', status: 'PLANNED', complaintCount: '0', driverPay: '2500',
     });
     setOrders([emptyOrder()]);
@@ -544,6 +550,69 @@ export default function RoutesPage() {
                 <input id="date" type="date" value={formData.date}
                   onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                   className="input" required />
+              </div>
+
+              {/* Čas dojetí */}
+              <div>
+                <label className="label">Přibližný čas dojetí</label>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={formData.arrivalFrom}
+                    onChange={(e) => {
+                      const from = e.target.value;
+                      // Automaticky přednastavit "do" o 1 hodinu
+                      let autoTo = '';
+                      if (from) {
+                        const [h, m] = from.split(':').map(Number);
+                        const toH = h + 1;
+                        if (toH <= 23) {
+                          autoTo = `${String(toH).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                        }
+                      }
+                      setFormData({ ...formData, arrivalFrom: from, arrivalTo: formData.arrivalTo || autoTo });
+                    }}
+                    className="input flex-1"
+                  >
+                    <option value="">Od</option>
+                    {Array.from({ length: 30 }, (_, i) => {
+                      const h = Math.floor(i / 2) + 5;
+                      const m = (i % 2) * 30;
+                      const val = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                      return <option key={val} value={val}>{val}</option>;
+                    })}
+                  </select>
+                  <span className="text-gray-400 font-medium">—</span>
+                  <select
+                    value={formData.arrivalTo}
+                    onChange={(e) => setFormData({ ...formData, arrivalTo: e.target.value })}
+                    className="input flex-1"
+                  >
+                    <option value="">Do</option>
+                    {formData.arrivalFrom ? (() => {
+                      const [fromH, fromM] = formData.arrivalFrom.split(':').map(Number);
+                      const options = [];
+                      for (let offset = 1; offset <= 8; offset++) {
+                        const totalMin = (fromH * 60 + fromM) + offset * 30;
+                        const h = Math.floor(totalMin / 60);
+                        const m = totalMin % 60;
+                        if (h > 23) break;
+                        const val = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                        options.push(<option key={val} value={val}>{val}</option>);
+                      }
+                      return options;
+                    })() : (
+                      Array.from({ length: 30 }, (_, i) => {
+                        const h = Math.floor(i / 2) + 5;
+                        const m = (i % 2) * 30;
+                        const val = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                        return <option key={val} value={val}>{val}</option>;
+                      })
+                    )}
+                  </select>
+                </div>
+                {formData.arrivalFrom && formData.arrivalTo && (
+                  <p className="text-xs text-gray-500 mt-1">Řidič dorazí přibližně {formData.arrivalFrom} - {formData.arrivalTo}</p>
+                )}
               </div>
 
               {/* Výběr řidiče */}
@@ -1077,6 +1146,11 @@ export default function RoutesPage() {
                           </div>
                           <div style={{ fontSize: '10pt', color: '#555' }}>
                             {format(new Date(route.date), 'EEEE d. MMMM yyyy', { locale: cs })}
+                            {route.arrivalFrom && (
+                              <span style={{ marginLeft: '10px', fontWeight: 'bold', color: '#000' }}>
+                                Dojetí: {route.arrivalFrom}{route.arrivalTo ? ` - ${route.arrivalTo}` : ''}
+                              </span>
+                            )}
                           </div>
                         </div>
                         <div style={{ textAlign: 'right', fontSize: '10pt' }}>
@@ -1249,6 +1323,11 @@ function RouteCard({
               </span>
             ) : (
               <span className="text-orange-600 font-medium">⚠ Nepřiřazen</span>
+            )}
+            {route.arrivalFrom && (
+              <span className="text-primary-600 font-medium">
+                🕐 {route.arrivalFrom}{route.arrivalTo ? ` - ${route.arrivalTo}` : ''}
+              </span>
             )}
             {route.vehicle && <span>{route.vehicle.name} · {route.vehicle.spz}</span>}
             {(route.actualKm || route.plannedKm) && (

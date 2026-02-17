@@ -114,6 +114,8 @@ model Route {
   plannedKm    Int?
   actualKm     Int?
   date         DateTime
+  arrivalFrom  String?  // Čas dojetí OD (např. "13:00")
+  arrivalTo    String?  // Čas dojetí DO (např. "14:00")
   note         String?
   status         String   @default("PLANNED") // PLANNED, IN_PROGRESS, COMPLETED
   confirmed      Boolean  @default(false) // Potvrzeno řidičem
