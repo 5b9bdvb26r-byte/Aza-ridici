@@ -472,11 +472,12 @@ export default function VehiclesPage() {
     }
 
     const remaining = targetKm - currentKm;
-    const startKm = targetKm - intervalKm;
-    const elapsed = currentKm - startKm;
-    const percentage = intervalKm > 0 ? Math.min(Math.max((elapsed / intervalKm) * 100, 0), 100) : 0;
+    // Fixní škála: 10 000 km = 100%, 1 000 km = 10%
+    // Takže 1 500 km zbývá → (10000 - 1500) / 10000 = 85%
+    const scale = 10000;
+    const percentage = Math.min(Math.max(((scale - remaining) / scale) * 100, 0), 100);
     const needsAttention = remaining <= 0;
-    const nearLimit = remaining > 0 && remaining <= intervalKm * 0.2;
+    const nearLimit = remaining > 0 && remaining <= 2000;
 
     return (
       <div className={cn(
