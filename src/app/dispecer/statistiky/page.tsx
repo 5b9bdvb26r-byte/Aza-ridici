@@ -8,6 +8,7 @@ interface VehicleStats {
   spz: string;
   name: string;
   trips: number;
+  lastEndKm: number | null;
 }
 
 interface DriverStats {
@@ -294,6 +295,11 @@ export default function StatisticsPage() {
                           <span className="text-gray-400 ml-2">
                             {vehicle.trips}x
                           </span>
+                          {vehicle.lastEndKm && (
+                            <span className="text-blue-600 ml-2 font-medium">
+                              🔧 {vehicle.lastEndKm.toLocaleString('cs-CZ')} km
+                            </span>
+                          )}
                         </div>
                       ))}
                     </div>
