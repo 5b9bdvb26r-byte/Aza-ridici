@@ -111,18 +111,12 @@ export async function POST(request: Request) {
         },
       });
 
-      // Aktualizovat stav tachometru a připsat km k vozidlu
+      // Aktualizovat stav tachometru vozidla
       if (route.vehicleId) {
         await tx.vehicle.update({
           where: { id: route.vehicleId },
           data: {
             currentKm: endKmValue,
-            ...(kmValue > 0 ? {
-              oilKm: { increment: kmValue },
-              adblueKm: { increment: kmValue },
-              brakesKm: { increment: kmValue },
-              bearingsKm: { increment: kmValue },
-            } : {}),
           },
         });
       }

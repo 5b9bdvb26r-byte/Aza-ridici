@@ -58,10 +58,10 @@ export default function VehiclesPage() {
     fridexLimitMonths: '24',
   });
   const [isSaving, setIsSaving] = useState(false);
-  const [addKmModal, setAddKmModal] = useState<Vehicle | null>(null);
-  const [addKmValue, setAddKmValue] = useState('');
   const [editKmModal, setEditKmModal] = useState<Vehicle | null>(null);
   const [editKmValue, setEditKmValue] = useState('');
+  const [editTargetModal, setEditTargetModal] = useState<{ vehicle: Vehicle; type: 'oil' | 'adblue' | 'brakes' | 'bearings'; label: string } | null>(null);
+  const [editTargetValue, setEditTargetValue] = useState('');
 
   // Modal pro opravu
   const [repairModal, setRepairModal] = useState<Vehicle | null>(null);
@@ -233,26 +233,6 @@ export default function VehiclesPage() {
     }
   };
 
-  const handleAddKm = async () => {
-    if (!addKmModal || !addKmValue) return;
-
-    try {
-      const response = await fetch(`/api/vehicles/${addKmModal.id}/maintenance`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'add', km: addKmValue }),
-      });
-
-      if (response.ok) {
-        await fetchVehicles();
-        setAddKmModal(null);
-        setAddKmValue('');
-      }
-    } catch (error) {
-      console.error('Chyba při přidávání km:', error);
-    }
-  };
-
   const handleEditKm = async () => {
     if (!editKmModal || !editKmValue) return;
 
@@ -270,6 +250,26 @@ export default function VehiclesPage() {
       }
     } catch (error) {
       console.error('Chyba při úpravě stavu km:', error);
+    }
+  };
+
+  const handleEditTarget = async () => {
+    if (!editTargetModal || !editTargetValue) return;
+
+    try {
+      const response = await fetch(`/api/vehicles/${editTargetModal.vehicle.id}/maintenance`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'setTarget', type: editTargetModal.type, km: editTargetValue }),
+      });
+
+      if (response.ok) {
+        await fetchVehicles();
+        setEditTargetModal(null);
+        setEditTargetValue('');
+      }
+    } catch (error) {
+      console.error('Chyba při nastavení cíle:', error);
     }
   };
 
@@ -337,32 +337,6 @@ export default function VehiclesPage() {
     }
   };
 
-  const getProgressColor = (current: number, limit: number) => {
-    const percentage = (current / limit) * 100;
-    if (percentage >= 100) return 'bg-red-500';
-    if (percentage >= 80) return 'bg-orange-500';
-    if (percentage >= 60) return 'bg-yellow-500';
-    return 'bg-green-500';
-  };
-
-  const getStatusBadge = (current: number, limit: number) => {
-    const percentage = (current / limit) * 100;
-    if (percentage >= 100) {
-      return (
-        <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-bold rounded-full animate-pulse">
-          ⚠️ KONTROLA!
-        </span>
-      );
-    }
-    if (percentage >= 80) {
-      return (
-        <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">
-          Brzy
-        </span>
-      );
-    }
-    return null;
-  };
 
   // Kontrola brzdové kapaliny
   const getBrakeFluidStatus = (lastChange: string, limitMonths: number) => {
@@ -462,10 +436,10 @@ export default function VehiclesPage() {
     const fridexStatus = getFridexStatus(v.fridexLastChange, v.fridexLimitMonths);
     const technicalStatus = getTechnicalStatus(v.technicalInspectionDate);
     return (
-      v.oilKm >= v.oilLimitKm ||
-      v.adblueKm >= v.adblueLimitKm ||
-      v.brakesKm >= v.brakesLimitKm ||
-      v.bearingsKm >= v.bearingsLimitKm ||
+      (v.oilKm > 0 && v.currentKm >= v.oilKm) ||
+      (v.adblueKm > 0 && v.currentKm >= v.adblueKm) ||
+      (v.brakesKm > 0 && v.currentKm >= v.brakesKm) ||
+      (v.bearingsKm > 0 && v.currentKm >= v.bearingsKm) ||
       brakeFluidStatus.status === 'expired' ||
       greenCardStatus.status === 'expired' ||
       fridexStatus.status === 'expired' ||
@@ -473,11 +447,36 @@ export default function VehiclesPage() {
     );
   }).length;
 
-  // Komponenta pro mini progress bar
-  const MiniProgressBar = ({ current, limit, label, icon }: { current: number; limit: number; label: string; icon: string }) => {
-    const percentage = Math.min((current / limit) * 100, 100);
-    const needsAttention = percentage >= 100;
-    const nearLimit = percentage >= 80;
+  // Komponenta pro progress bar podle tachometru
+  const TachoProgressBar = ({ targetKm, currentKm, intervalKm, label, icon, onEdit }: {
+    targetKm: number; currentKm: number; intervalKm: number; label: string; icon: string;
+    onEdit?: () => void;
+  }) => {
+    // Pokud cíl není nastavený (0), zobrazit "Nenastaveno"
+    if (targetKm === 0) {
+      return (
+        <div className="p-2 rounded-lg bg-gray-50">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs text-gray-600 flex items-center gap-1">
+              <span>{icon}</span>
+              <span>{label}</span>
+            </span>
+            {onEdit && (
+              <button onClick={(e) => { e.stopPropagation(); onEdit(); }} className="text-xs text-primary-600 hover:text-primary-800">✏️</button>
+            )}
+          </div>
+          <div className="h-2 bg-gray-200 rounded-full overflow-hidden mb-1" />
+          <div className="text-xs text-gray-400 text-right">Nenastaveno</div>
+        </div>
+      );
+    }
+
+    const remaining = targetKm - currentKm;
+    const startKm = targetKm - intervalKm;
+    const elapsed = currentKm - startKm;
+    const percentage = intervalKm > 0 ? Math.min(Math.max((elapsed / intervalKm) * 100, 0), 100) : 0;
+    const needsAttention = remaining <= 0;
+    const nearLimit = remaining > 0 && remaining <= intervalKm * 0.2;
 
     return (
       <div className={cn(
@@ -489,16 +488,31 @@ export default function VehiclesPage() {
             <span>{icon}</span>
             <span>{label}</span>
           </span>
-          {getStatusBadge(current, limit)}
+          <div className="flex items-center gap-1">
+            {needsAttention && (
+              <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-bold rounded-full animate-pulse">⚠️ KONTROLA!</span>
+            )}
+            {nearLimit && !needsAttention && (
+              <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">Brzy</span>
+            )}
+            {onEdit && (
+              <button onClick={(e) => { e.stopPropagation(); onEdit(); }} className="text-xs text-primary-600 hover:text-primary-800">✏️</button>
+            )}
+          </div>
         </div>
         <div className="h-2 bg-gray-200 rounded-full overflow-hidden mb-1">
           <div
-            className={cn('h-full transition-all', getProgressColor(current, limit))}
+            className={cn('h-full transition-all',
+              needsAttention ? 'bg-red-500' : nearLimit ? 'bg-orange-500' : percentage > 60 ? 'bg-yellow-500' : 'bg-green-500'
+            )}
             style={{ width: `${percentage}%` }}
           />
         </div>
         <div className="text-xs text-gray-500 text-right">
-          {current.toLocaleString()} / {limit.toLocaleString()} km
+          {needsAttention
+            ? `Překročeno o ${Math.abs(remaining).toLocaleString('cs-CZ')} km`
+            : `Zbývá ${remaining.toLocaleString('cs-CZ')} km (při ${targetKm.toLocaleString('cs-CZ')} km)`
+          }
         </div>
       </div>
     );
@@ -780,10 +794,10 @@ export default function VehiclesPage() {
           const fridexStatus = getFridexStatus(vehicle.fridexLastChange, vehicle.fridexLimitMonths);
           const technicalStatus = getTechnicalStatus(vehicle.technicalInspectionDate);
           const needsAttention =
-            vehicle.oilKm >= vehicle.oilLimitKm ||
-            vehicle.adblueKm >= vehicle.adblueLimitKm ||
-            vehicle.brakesKm >= vehicle.brakesLimitKm ||
-            vehicle.bearingsKm >= vehicle.bearingsLimitKm ||
+            (vehicle.oilKm > 0 && vehicle.currentKm >= vehicle.oilKm) ||
+            (vehicle.adblueKm > 0 && vehicle.currentKm >= vehicle.adblueKm) ||
+            (vehicle.brakesKm > 0 && vehicle.currentKm >= vehicle.brakesKm) ||
+            (vehicle.bearingsKm > 0 && vehicle.currentKm >= vehicle.bearingsKm) ||
             brakeFluidStatus.status === 'expired' ||
             greenCardStatus.status === 'expired' ||
             fridexStatus.status === 'expired' ||
@@ -823,12 +837,6 @@ export default function VehiclesPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => setAddKmModal(vehicle)}
-                    className="px-3 py-1.5 bg-primary-100 text-primary-700 rounded-lg text-sm font-medium hover:bg-primary-200 transition-colors"
-                  >
-                    + km
-                  </button>
-                  <button
                     onClick={() => setRepairModal(vehicle)}
                     className="px-3 py-1.5 bg-yellow-100 text-yellow-700 rounded-lg text-sm font-medium hover:bg-yellow-200 transition-colors"
                   >
@@ -851,29 +859,49 @@ export default function VehiclesPage() {
 
               {/* Přehled s progress bary - VŽDY VIDITELNÉ */}
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                <MiniProgressBar
-                  current={vehicle.oilKm}
-                  limit={vehicle.oilLimitKm}
+                <TachoProgressBar
+                  targetKm={vehicle.oilKm}
+                  currentKm={vehicle.currentKm}
+                  intervalKm={vehicle.oilLimitKm}
                   label="Olej"
                   icon="🛢️"
+                  onEdit={() => {
+                    setEditTargetModal({ vehicle, type: 'oil', label: 'Olej' });
+                    setEditTargetValue(vehicle.oilKm.toString());
+                  }}
                 />
-                <MiniProgressBar
-                  current={vehicle.adblueKm}
-                  limit={vehicle.adblueLimitKm}
+                <TachoProgressBar
+                  targetKm={vehicle.adblueKm}
+                  currentKm={vehicle.currentKm}
+                  intervalKm={vehicle.adblueLimitKm}
                   label="AdBlue"
                   icon="💧"
+                  onEdit={() => {
+                    setEditTargetModal({ vehicle, type: 'adblue', label: 'AdBlue' });
+                    setEditTargetValue(vehicle.adblueKm.toString());
+                  }}
                 />
-                <MiniProgressBar
-                  current={vehicle.brakesKm}
-                  limit={vehicle.brakesLimitKm}
+                <TachoProgressBar
+                  targetKm={vehicle.brakesKm}
+                  currentKm={vehicle.currentKm}
+                  intervalKm={vehicle.brakesLimitKm}
                   label="Brzdy"
                   icon="🛑"
+                  onEdit={() => {
+                    setEditTargetModal({ vehicle, type: 'brakes', label: 'Brzdy' });
+                    setEditTargetValue(vehicle.brakesKm.toString());
+                  }}
                 />
-                <MiniProgressBar
-                  current={vehicle.bearingsKm}
-                  limit={vehicle.bearingsLimitKm}
+                <TachoProgressBar
+                  targetKm={vehicle.bearingsKm}
+                  currentKm={vehicle.currentKm}
+                  intervalKm={vehicle.bearingsLimitKm}
                   label="Ložiska"
                   icon="⚙️"
+                  onEdit={() => {
+                    setEditTargetModal({ vehicle, type: 'bearings', label: 'Ložiska' });
+                    setEditTargetValue(vehicle.bearingsKm.toString());
+                  }}
                 />
                 <DateProgressBar
                   label="Brzd. kap."
@@ -1056,41 +1084,46 @@ export default function VehiclesPage() {
         )}
       </div>
 
-      {/* Modal pro přidání km */}
-      {addKmModal && (
+      {/* Modal pro editaci cílového stavu km */}
+      {editTargetModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Přidat kilometry - {addKmModal.name}
+              {editTargetModal.label} - kontrola při km - {editTargetModal.vehicle.name}
             </h3>
             <p className="text-sm text-gray-500 mb-4">
-              Zadejte počet ujetých kilometrů. Přidá se ke všem km počítadlům.
+              Zadejte stav tachometru, při kterém je potřeba provést kontrolu/výměnu.
+              {editTargetModal.vehicle.currentKm > 0 && (
+                <span className="block mt-1 font-medium text-gray-700">
+                  Aktuální stav: {editTargetModal.vehicle.currentKm.toLocaleString('cs-CZ')} km
+                </span>
+              )}
             </p>
             <input
               type="number"
-              value={addKmValue}
-              onChange={(e) => setAddKmValue(e.target.value)}
+              value={editTargetValue}
+              onChange={(e) => setEditTargetValue(e.target.value)}
               className="input w-full mb-4"
-              placeholder="Počet km"
-              min="1"
+              placeholder="Stav tachometru pro kontrolu (km)"
+              min="0"
               autoFocus
             />
             <div className="flex gap-3">
               <button
                 onClick={() => {
-                  setAddKmModal(null);
-                  setAddKmValue('');
+                  setEditTargetModal(null);
+                  setEditTargetValue('');
                 }}
                 className="btn-secondary flex-1"
               >
                 Zrušit
               </button>
               <button
-                onClick={handleAddKm}
-                disabled={!addKmValue}
+                onClick={handleEditTarget}
+                disabled={!editTargetValue}
                 className="btn-primary flex-1"
               >
-                Přidat
+                Uložit
               </button>
             </div>
           </div>
