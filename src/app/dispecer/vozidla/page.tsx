@@ -20,15 +20,19 @@ interface Vehicle {
   name: string;
   currentKm: number;
   oilKm: number;
+  oilLastKm: number;
   oilLimitKm: number;
   oilLastReset: string;
   adblueKm: number;
+  adblueLastKm: number;
   adblueLimitKm: number;
   adblueLastReset: string;
   brakesKm: number;
+  brakesLastKm: number;
   brakesLimitKm: number;
   brakesLastReset: string;
   bearingsKm: number;
+  bearingsLastKm: number;
   bearingsLimitKm: number;
   bearingsLastReset: string;
   brakeFluidLastChange: string;
@@ -448,8 +452,8 @@ export default function VehiclesPage() {
   }).length;
 
   // Komponenta pro progress bar podle tachometru
-  const TachoProgressBar = ({ targetKm, currentKm, intervalKm, label, icon, onEdit }: {
-    targetKm: number; currentKm: number; intervalKm: number; label: string; icon: string;
+  const TachoProgressBar = ({ targetKm, lastServiceKm, currentKm, label, icon, onEdit }: {
+    targetKm: number; lastServiceKm: number; currentKm: number; label: string; icon: string;
     onEdit?: () => void;
   }) => {
     // Pokud cíl není nastavený (0), zobrazit "Nenastaveno"
@@ -472,10 +476,11 @@ export default function VehiclesPage() {
     }
 
     const remaining = targetKm - currentKm;
-    // Fixní škála: 10 000 km = 100%, 1 000 km = 10%
-    // Takže 1 500 km zbývá → (10000 - 1500) / 10000 = 85%
-    const scale = 10000;
-    const percentage = Math.min(Math.max(((scale - remaining) / scale) * 100, 0), 100);
+    // Procento z rozsahu lastServiceKm → targetKm
+    // Výměna na 30 000, cíl 40 000, aktuálně 31 000 → 10%
+    const totalRange = targetKm - lastServiceKm;
+    const elapsed = currentKm - lastServiceKm;
+    const percentage = totalRange > 0 ? Math.min(Math.max((elapsed / totalRange) * 100, 0), 100) : 0;
     const needsAttention = remaining <= 0;
     const nearLimit = remaining > 0 && remaining <= 2000;
 
@@ -515,6 +520,11 @@ export default function VehiclesPage() {
             : `Zbývá ${remaining.toLocaleString('cs-CZ')} km (tach. ${targetKm.toLocaleString('cs-CZ')} km)`
           }
         </div>
+        {lastServiceKm > 0 && (
+          <div className="text-[10px] text-gray-400 text-right">
+            Poslední výměna: {lastServiceKm.toLocaleString('cs-CZ')} km
+          </div>
+        )}
       </div>
     );
   };
@@ -862,8 +872,8 @@ export default function VehiclesPage() {
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                 <TachoProgressBar
                   targetKm={vehicle.oilKm}
+                  lastServiceKm={vehicle.oilLastKm}
                   currentKm={vehicle.currentKm}
-                  intervalKm={vehicle.oilLimitKm}
                   label="Olej"
                   icon="🛢️"
                   onEdit={() => {
@@ -873,8 +883,8 @@ export default function VehiclesPage() {
                 />
                 <TachoProgressBar
                   targetKm={vehicle.adblueKm}
+                  lastServiceKm={vehicle.adblueLastKm}
                   currentKm={vehicle.currentKm}
-                  intervalKm={vehicle.adblueLimitKm}
                   label="AdBlue"
                   icon="💧"
                   onEdit={() => {
@@ -884,8 +894,8 @@ export default function VehiclesPage() {
                 />
                 <TachoProgressBar
                   targetKm={vehicle.brakesKm}
+                  lastServiceKm={vehicle.brakesLastKm}
                   currentKm={vehicle.currentKm}
-                  intervalKm={vehicle.brakesLimitKm}
                   label="Brzdy"
                   icon="🛑"
                   onEdit={() => {
@@ -895,8 +905,8 @@ export default function VehiclesPage() {
                 />
                 <TachoProgressBar
                   targetKm={vehicle.bearingsKm}
+                  lastServiceKm={vehicle.bearingsLastKm}
                   currentKm={vehicle.currentKm}
-                  intervalKm={vehicle.bearingsLimitKm}
                   label="Ložiska"
                   icon="⚙️"
                   onEdit={() => {

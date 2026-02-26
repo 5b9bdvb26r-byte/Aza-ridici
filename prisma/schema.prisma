@@ -48,24 +48,28 @@ model Vehicle {
   name      String
   currentKm Int      @default(0)  // aktuální stav tachometru (km)
 
-  // Sledování oleje - km od poslední výměny/kontroly
-  oilKm              Int      @default(0)    // aktuální km od poslední kontroly oleje
-  oilLimitKm         Int      @default(15000) // limit pro upozornění (výchozí 15000 km)
+  // Sledování oleje
+  oilKm              Int      @default(0)    // cílový stav tachometru pro další kontrolu
+  oilLastKm          Int      @default(0)    // stav tachometru při poslední výměně
+  oilLimitKm         Int      @default(15000) // interval pro výpočet dalšího cíle (km)
   oilLastReset       DateTime @default(now()) // datum poslední kontroly
 
-  // Sledování AdBlue - km od posledního doplnění
-  adblueKm           Int      @default(0)    // aktuální km od posledního doplnění
-  adblueLimitKm      Int      @default(10000) // limit pro upozornění (výchozí 10000 km)
+  // Sledování AdBlue
+  adblueKm           Int      @default(0)    // cílový stav tachometru pro další doplnění
+  adblueLastKm       Int      @default(0)    // stav tachometru při posledním doplnění
+  adblueLimitKm      Int      @default(10000) // interval pro výpočet dalšího cíle (km)
   adblueLastReset    DateTime @default(now()) // datum posledního doplnění
 
-  // Sledování brzd - km od poslední výměny
-  brakesKm           Int      @default(0)    // aktuální km od poslední výměny brzd
-  brakesLimitKm      Int      @default(60000) // limit pro upozornění (výchozí 60000 km)
+  // Sledování brzd
+  brakesKm           Int      @default(0)    // cílový stav tachometru pro další výměnu
+  brakesLastKm       Int      @default(0)    // stav tachometru při poslední výměně
+  brakesLimitKm      Int      @default(60000) // interval pro výpočet dalšího cíle (km)
   brakesLastReset    DateTime @default(now()) // datum poslední výměny
 
-  // Sledování ložisek - km od poslední výměny
-  bearingsKm         Int      @default(0)    // aktuální km od poslední výměny ložisek
-  bearingsLimitKm    Int      @default(100000) // limit pro upozornění (výchozí 100000 km)
+  // Sledování ložisek
+  bearingsKm         Int      @default(0)    // cílový stav tachometru pro další výměnu
+  bearingsLastKm     Int      @default(0)    // stav tachometru při poslední výměně
+  bearingsLimitKm    Int      @default(100000) // interval pro výpočet dalšího cíle (km)
   bearingsLastReset  DateTime @default(now()) // datum poslední výměny
 
   // Sledování brzdové kapaliny - datum poslední výměny
