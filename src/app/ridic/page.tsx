@@ -13,6 +13,8 @@ import {
   startOfWeek,
   endOfWeek,
   isToday,
+  isPast,
+  startOfDay,
 } from 'date-fns';
 import { cs } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -25,20 +27,11 @@ interface AvailabilityData {
   note?: string;
 }
 
-const statusOptions = [
-  { value: 'AVAILABLE', label: 'Dostupný', color: 'bg-green-500', bgColor: 'bg-green-100', textColor: 'text-green-700' },
-  { value: 'PARTIAL', label: 'Částečně', color: 'bg-orange-500', bgColor: 'bg-orange-100', textColor: 'text-orange-700' },
-  { value: 'UNAVAILABLE', label: 'Nedostupný', color: 'bg-red-500', bgColor: 'bg-red-100', textColor: 'text-red-700' },
-];
-
 export default function DriverAvailabilityPage() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [availability, setAvailability] = useState<AvailabilityData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [selectedStatus, setSelectedStatus] = useState<string>('AVAILABLE');
-  const [selectedNote, setSelectedNote] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
+  const [savingDate, setSavingDate] = useState<string | null>(null);
   const [pendingRoutes, setPendingRoutes] = useState(0);
 
   useEffect(() => {
@@ -72,66 +65,34 @@ export default function DriverAvailabilityPage() {
     }
   };
 
-  const handleDayClick = (day: Date) => {
-    setSelectedDate(day);
-    const existing = availability.find((a) => isSameDay(new Date(a.date), day));
-    if (existing) {
-      setSelectedStatus(existing.status);
-      setSelectedNote(existing.note || '');
-    } else {
-      setSelectedStatus('AVAILABLE');
-      setSelectedNote('');
-    }
-  };
+  // Klik na den = toggle dostupnost
+  const handleDayClick = async (day: Date) => {
+    const dateStr = format(day, 'yyyy-MM-dd');
+    setSavingDate(dateStr);
 
-  const handleSave = async () => {
-    if (!selectedDate) return;
-    setIsSaving(true);
+    const existing = availability.find((a) => isSameDay(new Date(a.date), day));
 
     try {
-      const response = await fetch('/api/availability', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          date: format(selectedDate, 'yyyy-MM-dd'),
-          status: selectedStatus,
-          note: selectedNote || null,
-        }),
-      });
-
-      if (response.ok) {
-        await fetchAvailability();
-        setSelectedDate(null);
+      if (existing) {
+        // Už je dostupný → smazat (zrušit dostupnost)
+        await fetch('/api/availability', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ date: dateStr, status: null }),
+        });
+      } else {
+        // Není nastaveno → nastavit jako dostupný
+        await fetch('/api/availability', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ date: dateStr, status: 'AVAILABLE' }),
+        });
       }
+      await fetchAvailability();
     } catch (error) {
       console.error('Chyba při ukládání dostupnosti:', error);
     } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleClear = async () => {
-    if (!selectedDate) return;
-    setIsSaving(true);
-
-    try {
-      const response = await fetch('/api/availability', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          date: format(selectedDate, 'yyyy-MM-dd'),
-          status: null,
-        }),
-      });
-
-      if (response.ok) {
-        await fetchAvailability();
-        setSelectedDate(null);
-      }
-    } catch (error) {
-      console.error('Chyba při mazání dostupnosti:', error);
-    } finally {
-      setIsSaving(false);
+      setSavingDate(null);
     }
   };
 
@@ -151,12 +112,6 @@ export default function DriverAvailabilityPage() {
 
   const weekDays = ['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'];
 
-  const statusColors: Record<string, string> = {
-    AVAILABLE: 'bg-green-500',
-    UNAVAILABLE: 'bg-red-500',
-    PARTIAL: 'bg-orange-500',
-  };
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -169,7 +124,7 @@ export default function DriverAvailabilityPage() {
     <div>
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">Moje dostupnost</h1>
-        <p className="text-gray-600 mt-1">Nastavte svou dostupnost pro rozvoz</p>
+        <p className="text-gray-600 mt-1">Klikněte na den = dostupný, klikněte znovu = zrušit</p>
       </div>
 
       {/* Upozornění na nevyplněné reporty */}
@@ -199,7 +154,7 @@ export default function DriverAvailabilityPage() {
             onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
             className="btn-secondary"
           >
-            &larr; Předchozí
+            &larr;
           </button>
           <h2 className="text-xl font-semibold text-gray-900 capitalize">
             {format(currentMonth, 'LLLL yyyy', { locale: cs })}
@@ -208,7 +163,7 @@ export default function DriverAvailabilityPage() {
             onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
             className="btn-secondary"
           >
-            Další &rarr;
+            &rarr;
           </button>
         </div>
 
@@ -224,42 +179,42 @@ export default function DriverAvailabilityPage() {
           {days.map((day) => {
             const isCurrentMonth = isSameMonth(day, currentMonth);
             const dayAvailability = getAvailabilityForDay(day);
-            const isSelected = selectedDate && isSameDay(day, selectedDate);
+            const isAvailable = dayAvailability?.status === 'AVAILABLE';
+            const dateStr = format(day, 'yyyy-MM-dd');
+            const isSavingThis = savingDate === dateStr;
+            const dayIsPast = isPast(startOfDay(day)) && !isToday(day);
 
             return (
               <button
                 key={day.toISOString()}
-                onClick={() => isCurrentMonth && handleDayClick(day)}
-                disabled={!isCurrentMonth}
+                onClick={() => isCurrentMonth && !dayIsPast && handleDayClick(day)}
+                disabled={!isCurrentMonth || dayIsPast || isSavingThis}
                 className={cn(
-                  'min-h-[80px] p-2 rounded-lg text-sm transition-colors relative flex flex-col items-center',
+                  'min-h-[70px] sm:min-h-[80px] p-2 rounded-lg text-sm transition-all relative flex flex-col items-center justify-center',
                   !isCurrentMonth && 'opacity-30 cursor-not-allowed bg-gray-50',
-                  isCurrentMonth && 'bg-white hover:bg-gray-50 border border-gray-200 shadow-sm',
-                  isToday(day) && 'ring-2 ring-primary-500 ring-offset-1 border-primary-300',
-                  isSelected && 'ring-2 ring-blue-500 ring-offset-1'
+                  dayIsPast && isCurrentMonth && 'opacity-40 cursor-not-allowed',
+                  isCurrentMonth && !dayIsPast && !isAvailable && 'bg-white hover:bg-green-50 border-2 border-gray-200 hover:border-green-300 cursor-pointer',
+                  isCurrentMonth && !dayIsPast && isAvailable && 'bg-green-100 border-2 border-green-400 hover:bg-red-50 hover:border-red-300 cursor-pointer',
+                  isToday(day) && 'ring-2 ring-primary-500 ring-offset-1',
+                  isSavingThis && 'opacity-50 pointer-events-none'
                 )}
               >
                 <span
                   className={cn(
-                    'font-bold text-sm w-7 h-7 flex items-center justify-center rounded-full mb-1',
+                    'font-bold text-sm w-7 h-7 flex items-center justify-center rounded-full',
                     isToday(day) ? 'bg-primary-500 text-white' : 'text-gray-900'
                   )}
                 >
                   {format(day, 'd')}
                 </span>
-                {isCurrentMonth && dayAvailability && (
-                  <div className="flex flex-col items-center gap-1">
-                    <div
-                      className={cn(
-                        'w-4 h-4 rounded-full',
-                        statusColors[dayAvailability.status]
-                      )}
-                    />
-                    <span className="text-[10px] text-gray-500 text-center leading-tight">
-                      {dayAvailability.status === 'AVAILABLE' && 'Dostupný'}
-                      {dayAvailability.status === 'PARTIAL' && 'Částečně'}
-                      {dayAvailability.status === 'UNAVAILABLE' && 'Nedostupný'}
-                    </span>
+                {isCurrentMonth && isAvailable && (
+                  <div className="flex flex-col items-center mt-1">
+                    <span className="text-lg leading-none">✅</span>
+                  </div>
+                )}
+                {isSavingThis && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-white/50 rounded-lg">
+                    <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
                   </div>
                 )}
               </button>
@@ -269,93 +224,19 @@ export default function DriverAvailabilityPage() {
 
         {/* Legenda */}
         <div className="mt-6 pt-4 border-t border-gray-200">
-          <div className="flex items-center justify-center flex-wrap gap-4 text-sm">
-            <div className="flex items-center space-x-2">
-              <span className="w-4 h-4 bg-green-500 rounded-full" />
-              <span>Dostupný</span>
+          <div className="flex items-center justify-center flex-wrap gap-6 text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-white border-2 border-gray-200 rounded-lg" />
+              <span className="text-gray-600">Nekliknuto</span>
             </div>
-            <div className="flex items-center space-x-2">
-              <span className="w-4 h-4 bg-orange-500 rounded-full" />
-              <span>Částečně</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <span className="w-4 h-4 bg-red-500 rounded-full" />
-              <span>Nedostupný</span>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-green-100 border-2 border-green-400 rounded-lg flex items-center justify-center text-sm">✅</div>
+              <span className="text-gray-600">Dostupný</span>
             </div>
           </div>
+          <p className="text-center text-xs text-gray-400 mt-3">Klikněte na den pro nastavení / zrušení dostupnosti</p>
         </div>
       </div>
-
-      {/* Modal - nastavení dostupnosti */}
-      {selectedDate && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Nastavit dostupnost
-            </h3>
-            <p className="text-gray-600 mb-4">
-              {format(selectedDate, 'EEEE d. MMMM yyyy', { locale: cs })}
-            </p>
-
-            <div className="space-y-3 mb-4">
-              {statusOptions.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => setSelectedStatus(option.value)}
-                  className={cn(
-                    'w-full p-3 rounded-lg border-2 text-left transition-all flex items-center gap-3',
-                    selectedStatus === option.value
-                      ? 'border-primary-500 bg-primary-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  )}
-                >
-                  <div className={cn('w-5 h-5 rounded-full', option.color)} />
-                  <span className="font-medium">{option.label}</span>
-                </button>
-              ))}
-            </div>
-
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Poznámka (volitelně)
-              </label>
-              <input
-                type="text"
-                value={selectedNote}
-                onChange={(e) => setSelectedNote(e.target.value)}
-                className="input w-full"
-                placeholder="např. Odpoledne volný, Do 14:00..."
-              />
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => setSelectedDate(null)}
-                className="btn-secondary flex-1"
-              >
-                Zrušit
-              </button>
-              {getAvailabilityForDay(selectedDate) && (
-                <button
-                  onClick={handleClear}
-                  disabled={isSaving}
-                  className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                >
-                  Smazat
-                </button>
-              )}
-              <button
-                onClick={handleSave}
-                disabled={isSaving}
-                className="btn-primary flex-1"
-              >
-                {isSaving ? 'Ukládám...' : 'Uložit'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

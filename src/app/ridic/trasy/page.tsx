@@ -41,6 +41,7 @@ interface DailyReport {
   id: string;
   routeId: string;
   actualKm: number;
+  endKm: number | null;
   fuelCost: number;
   carCheck: string;
   carCheckNote: string | null;
@@ -56,6 +57,7 @@ export default function DriverRoutesPage() {
   const [activeReport, setActiveReport] = useState<string | null>(null);
   const [reportForm, setReportForm] = useState({
     actualKm: '',
+    endKm: '',
     fuelCost: '',
     carCheck: 'OK',
     carCheckNote: '',
@@ -116,6 +118,7 @@ export default function DriverRoutesPage() {
     setActiveReport(route.id);
     setReportForm({
       actualKm: route.plannedKm?.toString() || '',
+      endKm: '',
       fuelCost: '',
       carCheck: 'OK',
       carCheckNote: '',
@@ -136,6 +139,7 @@ export default function DriverRoutesPage() {
         body: JSON.stringify({
           routeId: activeReport,
           actualKm: reportForm.actualKm,
+          endKm: reportForm.endKm || null,
           fuelCost: reportForm.fuelCost,
           carCheck: reportForm.carCheck,
           carCheckNote: reportForm.carCheck === 'NOK' ? reportForm.carCheckNote : null,
@@ -328,6 +332,20 @@ export default function DriverRoutesPage() {
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Konečný stav km (tachometr)
+                        </label>
+                        <input
+                          type="number"
+                          value={reportForm.endKm}
+                          onChange={(e) => setReportForm({ ...reportForm, endKm: e.target.value })}
+                          className="input w-full"
+                          placeholder="Stav tachometru po jízdě"
+                          min="0"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
                           Nafta (Kč)
                         </label>
                         <input
@@ -490,6 +508,7 @@ export default function DriverRoutesPage() {
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-400 mt-1">
                         {route.vehicle && <span>{route.vehicle.name}</span>}
                         <span>{route.actualKm || route.plannedKm || 0} km</span>
+                        {report?.endKm && <span>Tach: {report.endKm.toLocaleString('cs-CZ')} km</span>}
                         {report && (
                           <span className={cn(
                             'px-2 py-0.5 rounded-full text-xs font-bold',

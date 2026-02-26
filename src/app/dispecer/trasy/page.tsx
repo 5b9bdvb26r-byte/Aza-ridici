@@ -29,6 +29,7 @@ interface Order {
 interface DailyReport {
   id: string;
   actualKm: number;
+  endKm: number | null;
   fuelCost: number;
   carCheck: string;
   carCheckNote: string | null;
@@ -1454,6 +1455,7 @@ function RouteCard({
               </div>
               <div className="text-gray-600">
                 Skutečné km: <strong>{report.actualKm}</strong>
+                {report.endKm && <span className="ml-3">Tachometr: <strong>{report.endKm.toLocaleString('cs-CZ')} km</strong></span>}
                 {report.fuelCost > 0 && <span className="ml-3">Nafta: <strong>{report.fuelCost.toLocaleString('cs-CZ')} Kč</strong></span>}
               </div>
               {report.carCheckNote && <p className="text-red-600 mt-1">{report.carCheckNote}</p>}

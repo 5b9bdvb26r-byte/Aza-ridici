@@ -221,6 +221,7 @@ model DailyReport {
   routeId      String   @unique
   driverId     String
   actualKm     Int
+  endKm        Int?     // konečný stav tachometru (km)
   fuelCost     Float    @default(0) // náklady na naftu (Kč) - vyplní řidič po jízdě
   carCheck     String   @default("OK")
   carCheckNote String?

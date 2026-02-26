@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { routeId, actualKm, fuelCost, carCheck, carCheckNote } = body;
+    const { routeId, actualKm, endKm, fuelCost, carCheck, carCheckNote } = body;
 
     if (!routeId || actualKm === undefined) {
       return NextResponse.json(
@@ -85,11 +85,14 @@ export async function POST(request: Request) {
       const fuelCostValue = fuelCost ? parseFloat(fuelCost) : 0;
 
       // Vytvořit denní report
+      const endKmValue = endKm ? parseInt(endKm) : null;
+
       const report = await tx.dailyReport.create({
         data: {
           routeId,
           driverId: session.user.id,
           actualKm: kmValue,
+          endKm: endKmValue,
           fuelCost: fuelCostValue,
           carCheck: carCheck || 'OK',
           carCheckNote: carCheck === 'NOK' ? (carCheckNote || null) : null,
