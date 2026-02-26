@@ -1258,8 +1258,8 @@ export default function VehiclesPage() {
               </div>
             </div>
             <p className="text-gray-700 mb-6">
-              Opravdu chcete resetovat počítadlo <strong>{resetConfirm.label}</strong>?
-              Tato akce vynuluje aktuální km a nastaví nové datum resetu.
+              Opravdu chcete resetovat <strong>{resetConfirm.label}</strong>?
+              Nastaví nový cíl kontroly na aktuální km + interval.
             </p>
             <div className="flex gap-3">
               <button
