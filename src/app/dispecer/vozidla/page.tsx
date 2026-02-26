@@ -18,6 +18,7 @@ interface Vehicle {
   id: string;
   spz: string;
   name: string;
+  lastEndKm: number | null;
   oilKm: number;
   oilLimitKm: number;
   oilLastReset: string;
@@ -782,9 +783,14 @@ export default function VehiclesPage() {
                   className="cursor-pointer flex-1"
                   onClick={() => setExpandedVehicle(isExpanded ? null : vehicle.id)}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 flex-wrap">
                     <div className="font-bold text-lg text-gray-900">{vehicle.name}</div>
                     <div className="font-mono text-gray-600">{vehicle.spz}</div>
+                    {vehicle.lastEndKm && (
+                      <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-sm font-medium rounded-full">
+                        🔧 {vehicle.lastEndKm.toLocaleString('cs-CZ')} km
+                      </span>
+                    )}
                     <span className="text-gray-400 text-sm">{isExpanded ? '▼ skrýt detail' : '▶ detail'}</span>
                   </div>
                 </div>
