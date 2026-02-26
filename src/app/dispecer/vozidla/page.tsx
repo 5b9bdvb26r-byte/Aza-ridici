@@ -511,7 +511,7 @@ export default function VehiclesPage() {
         <div className="text-xs text-gray-500 text-right">
           {needsAttention
             ? `Překročeno o ${Math.abs(remaining).toLocaleString('cs-CZ')} km`
-            : `Zbývá ${remaining.toLocaleString('cs-CZ')} km (při ${targetKm.toLocaleString('cs-CZ')} km)`
+            : `Zbývá ${remaining.toLocaleString('cs-CZ')} km (tach. ${targetKm.toLocaleString('cs-CZ')} km)`
           }
         </div>
       </div>
@@ -672,7 +672,7 @@ export default function VehiclesPage() {
               </div>
               <div>
                 <label htmlFor="oilLimitKm" className="label">
-                  Limit oleje (km)
+                  Olej – interval tach. (km)
                 </label>
                 <input
                   id="oilLimitKm"
@@ -686,7 +686,7 @@ export default function VehiclesPage() {
               </div>
               <div>
                 <label htmlFor="adblueLimitKm" className="label">
-                  Limit AdBlue (km)
+                  AdBlue – interval tach. (km)
                 </label>
                 <input
                   id="adblueLimitKm"
@@ -700,7 +700,7 @@ export default function VehiclesPage() {
               </div>
               <div>
                 <label htmlFor="brakesLimitKm" className="label">
-                  Limit brzd (km)
+                  Brzdy – interval tach. (km)
                 </label>
                 <input
                   id="brakesLimitKm"
@@ -714,7 +714,7 @@ export default function VehiclesPage() {
               </div>
               <div>
                 <label htmlFor="bearingsLimitKm" className="label">
-                  Limit ložisek (km)
+                  Ložiska – interval tach. (km)
                 </label>
                 <input
                   id="bearingsLimitKm"
@@ -1089,13 +1089,13 @@ export default function VehiclesPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              {editTargetModal.label} - kontrola při km - {editTargetModal.vehicle.name}
+              {editTargetModal.label} – cílový stav tachometru – {editTargetModal.vehicle.name}
             </h3>
             <p className="text-sm text-gray-500 mb-4">
-              Zadejte stav tachometru, při kterém je potřeba provést kontrolu/výměnu.
+              Zadejte konečný stav tachometru, při kterém je potřeba provést kontrolu/výměnu.
               {editTargetModal.vehicle.currentKm > 0 && (
                 <span className="block mt-1 font-medium text-gray-700">
-                  Aktuální stav: {editTargetModal.vehicle.currentKm.toLocaleString('cs-CZ')} km
+                  Aktuální stav tachometru: {editTargetModal.vehicle.currentKm.toLocaleString('cs-CZ')} km
                 </span>
               )}
             </p>
@@ -1104,7 +1104,7 @@ export default function VehiclesPage() {
               value={editTargetValue}
               onChange={(e) => setEditTargetValue(e.target.value)}
               className="input w-full mb-4"
-              placeholder="Stav tachometru pro kontrolu (km)"
+              placeholder="Cílový stav tachometru (km)"
               min="0"
               autoFocus
             />
