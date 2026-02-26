@@ -54,11 +54,7 @@ export async function GET() {
             id: true,
             spz: true,
             name: true,
-          },
-        },
-        dailyReport: {
-          select: {
-            endKm: true,
+            currentKm: true,
           },
         },
       },
@@ -90,33 +86,23 @@ export async function GET() {
           : 0;
 
       // Používaná vozidla
-      const vehicleMap = new Map<string, { spz: string; name: string; trips: number; lastEndKm: number | null; lastDate: Date | null }>();
+      const vehicleMap = new Map<string, { spz: string; name: string; trips: number; currentKm: number }>();
       driverRoutes.forEach((route) => {
         if (route.vehicle) {
           const existing = vehicleMap.get(route.vehicle.id);
-          const routeDate = new Date(route.date);
-          const endKm = route.dailyReport?.endKm || null;
           if (existing) {
             existing.trips++;
-            // Aktualizovat endKm pokud je novější
-            if (endKm && (!existing.lastEndKm || !existing.lastDate || routeDate > existing.lastDate)) {
-              existing.lastEndKm = endKm;
-              existing.lastDate = routeDate;
-            }
           } else {
             vehicleMap.set(route.vehicle.id, {
               spz: route.vehicle.spz,
               name: route.vehicle.name,
               trips: 1,
-              lastEndKm: endKm,
-              lastDate: endKm ? routeDate : null,
+              currentKm: route.vehicle.currentKm || 0,
             });
           }
         }
       });
-      const vehicles = Array.from(vehicleMap.values())
-        .sort((a, b) => b.trips - a.trips)
-        .map(({ lastDate, ...rest }) => rest); // Odebrat lastDate z výstupu
+      const vehicles = Array.from(vehicleMap.values()).sort((a, b) => b.trips - a.trips);
 
       // Reklamace
       const complaintCount = driverRoutes.reduce((sum, r) => sum + (r.complaintCount || 0), 0);

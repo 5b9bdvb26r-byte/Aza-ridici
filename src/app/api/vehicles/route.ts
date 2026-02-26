@@ -16,42 +16,7 @@ export async function GET() {
       orderBy: { name: 'asc' },
     });
 
-    // Načíst poslední endKm pro každé vozidlo z daily reportů (přes trasy)
-    const vehicleIds = vehicles.map(v => v.id);
-    const latestReports = await prisma.route.findMany({
-      where: {
-        vehicleId: { in: vehicleIds },
-        dailyReport: {
-          endKm: { not: null },
-        },
-      },
-      select: {
-        vehicleId: true,
-        date: true,
-        dailyReport: {
-          select: {
-            endKm: true,
-          },
-        },
-      },
-      orderBy: { date: 'desc' },
-    });
-
-    // Pro každé vozidlo najít nejnovější endKm
-    const lastEndKmMap = new Map<string, number>();
-    latestReports.forEach((route) => {
-      if (route.vehicleId && route.dailyReport?.endKm && !lastEndKmMap.has(route.vehicleId)) {
-        lastEndKmMap.set(route.vehicleId, route.dailyReport.endKm);
-      }
-    });
-
-    // Přidat lastEndKm ke každému vozidlu
-    const vehiclesWithEndKm = vehicles.map(v => ({
-      ...v,
-      lastEndKm: lastEndKmMap.get(v.id) || null,
-    }));
-
-    return NextResponse.json(vehiclesWithEndKm);
+    return NextResponse.json(vehicles);
   } catch (error) {
     console.error('Chyba při načítání vozidel:', error);
     return NextResponse.json({ error: 'Chyba serveru' }, { status: 500 });

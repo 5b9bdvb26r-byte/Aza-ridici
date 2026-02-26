@@ -46,6 +46,7 @@ model Vehicle {
   id        String   @id @default(cuid())
   spz       String   @unique
   name      String
+  currentKm Int      @default(0)  // aktuální stav tachometru (km)
 
   // Sledování oleje - km od poslední výměny/kontroly
   oilKm              Int      @default(0)    // aktuální km od poslední kontroly oleje

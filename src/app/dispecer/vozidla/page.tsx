@@ -18,7 +18,7 @@ interface Vehicle {
   id: string;
   spz: string;
   name: string;
-  lastEndKm: number | null;
+  currentKm: number;
   oilKm: number;
   oilLimitKm: number;
   oilLastReset: string;
@@ -60,6 +60,8 @@ export default function VehiclesPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [addKmModal, setAddKmModal] = useState<Vehicle | null>(null);
   const [addKmValue, setAddKmValue] = useState('');
+  const [editKmModal, setEditKmModal] = useState<Vehicle | null>(null);
+  const [editKmValue, setEditKmValue] = useState('');
 
   // Modal pro opravu
   const [repairModal, setRepairModal] = useState<Vehicle | null>(null);
@@ -248,6 +250,26 @@ export default function VehiclesPage() {
       }
     } catch (error) {
       console.error('Chyba při přidávání km:', error);
+    }
+  };
+
+  const handleEditKm = async () => {
+    if (!editKmModal || !editKmValue) return;
+
+    try {
+      const response = await fetch(`/api/vehicles/${editKmModal.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentKm: editKmValue }),
+      });
+
+      if (response.ok) {
+        await fetchVehicles();
+        setEditKmModal(null);
+        setEditKmValue('');
+      }
+    } catch (error) {
+      console.error('Chyba při úpravě stavu km:', error);
     }
   };
 
@@ -786,11 +808,16 @@ export default function VehiclesPage() {
                   <div className="flex items-center gap-3 flex-wrap">
                     <div className="font-bold text-lg text-gray-900">{vehicle.name}</div>
                     <div className="font-mono text-gray-600">{vehicle.spz}</div>
-                    {vehicle.lastEndKm && (
-                      <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-sm font-medium rounded-full">
-                        🔧 {vehicle.lastEndKm.toLocaleString('cs-CZ')} km
-                      </span>
-                    )}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditKmModal(vehicle);
+                        setEditKmValue(vehicle.currentKm.toString());
+                      }}
+                      className="px-2 py-0.5 bg-blue-100 text-blue-700 text-sm font-medium rounded-full hover:bg-blue-200 transition-colors"
+                    >
+                      🔧 {vehicle.currentKm > 0 ? `${vehicle.currentKm.toLocaleString('cs-CZ')} km` : 'Nastavit km'}
+                    </button>
                     <span className="text-gray-400 text-sm">{isExpanded ? '▼ skrýt detail' : '▶ detail'}</span>
                   </div>
                 </div>
@@ -1064,6 +1091,47 @@ export default function VehiclesPage() {
                 className="btn-primary flex-1"
               >
                 Přidat
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal pro editaci stavu tachometru */}
+      {editKmModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Stav tachometru - {editKmModal.name}
+            </h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Zadejte aktuální stav tachometru vozidla. Tato hodnota se používá pro výpočet ujetých km.
+            </p>
+            <input
+              type="number"
+              value={editKmValue}
+              onChange={(e) => setEditKmValue(e.target.value)}
+              className="input w-full mb-4"
+              placeholder="Stav tachometru (km)"
+              min="0"
+              autoFocus
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setEditKmModal(null);
+                  setEditKmValue('');
+                }}
+                className="btn-secondary flex-1"
+              >
+                Zrušit
+              </button>
+              <button
+                onClick={handleEditKm}
+                disabled={!editKmValue}
+                className="btn-primary flex-1"
+              >
+                Uložit
               </button>
             </div>
           </div>

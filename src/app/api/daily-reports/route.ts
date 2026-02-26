@@ -45,11 +45,11 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { routeId, actualKm, endKm, fuelCost, carCheck, carCheckNote } = body;
+    const { routeId, endKm, fuelCost, carCheck, carCheckNote } = body;
 
-    if (!routeId || actualKm === undefined) {
+    if (!routeId || !endKm) {
       return NextResponse.json(
-        { error: 'ID trasy a skutečné km jsou povinné' },
+        { error: 'ID trasy a konečný stav km jsou povinné' },
         { status: 400 }
       );
     }
@@ -78,15 +78,17 @@ export async function POST(request: Request) {
       );
     }
 
-    const kmValue = parseInt(actualKm);
+    const endKmValue = parseInt(endKm);
+
+    // Automaticky vypočítat ujeté km z rozdílu tachometrů
+    const previousKm = route.vehicle?.currentKm || 0;
+    const kmValue = Math.max(0, endKmValue - previousKm);
 
     // Vytvořit report a aktualizovat trasu v transakci
     const result = await prisma.$transaction(async (tx) => {
       const fuelCostValue = fuelCost ? parseFloat(fuelCost) : 0;
 
       // Vytvořit denní report
-      const endKmValue = endKm ? parseInt(endKm) : null;
-
       const report = await tx.dailyReport.create({
         data: {
           routeId,
@@ -109,15 +111,18 @@ export async function POST(request: Request) {
         },
       });
 
-      // Připsat km k vozidlu pokud je přiřazeno
-      if (route.vehicleId && kmValue > 0) {
+      // Aktualizovat stav tachometru a připsat km k vozidlu
+      if (route.vehicleId) {
         await tx.vehicle.update({
           where: { id: route.vehicleId },
           data: {
-            oilKm: { increment: kmValue },
-            adblueKm: { increment: kmValue },
-            brakesKm: { increment: kmValue },
-            bearingsKm: { increment: kmValue },
+            currentKm: endKmValue,
+            ...(kmValue > 0 ? {
+              oilKm: { increment: kmValue },
+              adblueKm: { increment: kmValue },
+              brakesKm: { increment: kmValue },
+              bearingsKm: { increment: kmValue },
+            } : {}),
           },
         });
       }

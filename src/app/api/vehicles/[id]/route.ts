@@ -20,11 +20,12 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { spz, name, oilLimitKm, adblueLimitKm, brakesLimitKm, bearingsLimitKm, brakeFluidLimitMonths, greenCardLimitMonths, fridexLimitMonths } = body;
+    const { spz, name, currentKm, oilLimitKm, adblueLimitKm, brakesLimitKm, bearingsLimitKm, brakeFluidLimitMonths, greenCardLimitMonths, fridexLimitMonths } = body;
 
     const updateData: {
       spz?: string;
       name?: string;
+      currentKm?: number;
       oilLimitKm?: number;
       adblueLimitKm?: number;
       brakesLimitKm?: number;
@@ -36,6 +37,7 @@ export async function PUT(
 
     if (spz !== undefined) updateData.spz = spz;
     if (name !== undefined) updateData.name = name;
+    if (currentKm !== undefined) updateData.currentKm = parseInt(currentKm);
     if (oilLimitKm !== undefined) updateData.oilLimitKm = parseInt(oilLimitKm);
     if (adblueLimitKm !== undefined) updateData.adblueLimitKm = parseInt(adblueLimitKm);
     if (brakesLimitKm !== undefined) updateData.brakesLimitKm = parseInt(brakesLimitKm);

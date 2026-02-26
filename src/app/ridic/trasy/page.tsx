@@ -9,6 +9,7 @@ interface Vehicle {
   id: string;
   name: string;
   spz: string;
+  currentKm: number;
 }
 
 interface Order {
@@ -56,7 +57,6 @@ export default function DriverRoutesPage() {
   // Denní formulář
   const [activeReport, setActiveReport] = useState<string | null>(null);
   const [reportForm, setReportForm] = useState({
-    actualKm: '',
     endKm: '',
     fuelCost: '',
     carCheck: 'OK',
@@ -117,7 +117,6 @@ export default function DriverRoutesPage() {
   const handleOpenReport = (route: Route) => {
     setActiveReport(route.id);
     setReportForm({
-      actualKm: route.plannedKm?.toString() || '',
       endKm: '',
       fuelCost: '',
       carCheck: 'OK',
@@ -138,8 +137,7 @@ export default function DriverRoutesPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           routeId: activeReport,
-          actualKm: reportForm.actualKm,
-          endKm: reportForm.endKm || null,
+          endKm: reportForm.endKm,
           fuelCost: reportForm.fuelCost,
           carCheck: reportForm.carCheck,
           carCheckNote: reportForm.carCheck === 'NOK' ? reportForm.carCheckNote : null,
@@ -313,26 +311,7 @@ export default function DriverRoutesPage() {
                     <div className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Skutečně ujeté km
-                        </label>
-                        <input
-                          type="number"
-                          value={reportForm.actualKm}
-                          onChange={(e) => setReportForm({ ...reportForm, actualKm: e.target.value })}
-                          className="input w-full"
-                          placeholder={route.plannedKm?.toString() || '0'}
-                          min="0"
-                        />
-                        {route.plannedKm && (
-                          <p className="text-xs text-gray-500 mt-1">
-                            Plánováno: {route.plannedKm} km
-                          </p>
-                        )}
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Konečný stav km (tachometr)
+                          Konečný stav tachometru (km)
                         </label>
                         <input
                           type="number"
@@ -342,6 +321,18 @@ export default function DriverRoutesPage() {
                           placeholder="Stav tachometru po jízdě"
                           min="0"
                         />
+                        {route.vehicle && (
+                          <div className="mt-1 space-y-0.5">
+                            <p className="text-xs text-gray-500">
+                              Předchozí stav: {route.vehicle.currentKm > 0 ? `${route.vehicle.currentKm.toLocaleString('cs-CZ')} km` : 'nenastaveno'}
+                            </p>
+                            {reportForm.endKm && route.vehicle.currentKm > 0 && (
+                              <p className="text-xs font-medium text-primary-600">
+                                Ujeté km: {Math.max(0, parseInt(reportForm.endKm) - route.vehicle.currentKm).toLocaleString('cs-CZ')} km
+                              </p>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       <div>
@@ -414,7 +405,7 @@ export default function DriverRoutesPage() {
                         </button>
                         <button
                           onClick={handleSubmitReport}
-                          disabled={isSaving || !reportForm.actualKm}
+                          disabled={isSaving || !reportForm.endKm}
                           className="btn-primary flex-1"
                         >
                           {isSaving ? 'Odesílám...' : 'Odeslat report'}
