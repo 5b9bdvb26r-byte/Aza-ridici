@@ -10,6 +10,7 @@ interface Report {
   id: string;
   routeId: string;
   actualKm: number;
+  endKm: number | null;
   fuelCost: number;
   carCheck: string;
   carCheckNote: string | null;
@@ -154,10 +155,7 @@ export default function DriverHlaseniPage() {
                       <span>{report.route.vehicle.name} ({report.route.vehicle.spz})</span>
                     )}
                     <span>
-                      {report.actualKm} km
-                      {report.route.plannedKm && report.actualKm !== report.route.plannedKm && (
-                        <span className="text-gray-400 ml-1">(plán: {report.route.plannedKm} km)</span>
-                      )}
+                      Tach.: {report.endKm ? report.endKm.toLocaleString('cs-CZ') : report.actualKm} km
                     </span>
                     {report.fuelCost > 0 && (
                       <span>Nafta: {report.fuelCost.toLocaleString('cs-CZ')} Kč</span>

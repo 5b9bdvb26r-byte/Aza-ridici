@@ -1149,7 +1149,7 @@ export default function VehiclesPage() {
               Stav tachometru - {editKmModal.name}
             </h3>
             <p className="text-sm text-gray-500 mb-4">
-              Zadejte aktuální stav tachometru vozidla. Tato hodnota se používá pro výpočet ujetých km.
+              Zadejte konečný stav tachometru vozidla.
             </p>
             <input
               type="number"

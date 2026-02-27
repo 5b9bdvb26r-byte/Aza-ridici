@@ -498,8 +498,10 @@ export default function DriverRoutesPage() {
                       </div>
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-400 mt-1">
                         {route.vehicle && <span>{route.vehicle.name}</span>}
-                        <span>{route.actualKm || route.plannedKm || 0} km</span>
-                        {report?.endKm && <span>Tach: {report.endKm.toLocaleString('cs-CZ')} km</span>}
+                        {report?.endKm
+                          ? <span>Tach.: {report.endKm.toLocaleString('cs-CZ')} km</span>
+                          : <span>{route.actualKm || route.plannedKm || 0} km</span>
+                        }
                         {report && (
                           <span className={cn(
                             'px-2 py-0.5 rounded-full text-xs font-bold',

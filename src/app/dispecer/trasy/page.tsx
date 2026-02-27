@@ -1218,7 +1218,7 @@ export default function RoutesPage() {
                       {/* Podpis řidiče */}
                       <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'space-between', fontSize: '9pt', color: '#888' }}>
                         <div>
-                          Skutečné km: ___________
+                          Konečný stav tach.: ___________
                         </div>
                         <div>
                           Nafta (Kč): ___________
@@ -1246,14 +1246,14 @@ export default function RoutesPage() {
               {completeModal.vehicle && <span className="text-gray-500"> - {completeModal.vehicle.name}</span>}
             </p>
             <div className="mb-4">
-              <label className="label">Skutečně ujeté km</label>
+              <label className="label">Konečný stav tachometru (km)</label>
               <input type="number" value={actualKmInput} onChange={(e) => setActualKmInput(e.target.value)}
                 className="input w-full" placeholder={completeModal.plannedKm?.toString() || '0'} min="0" autoFocus />
               {completeModal.plannedKm && <p className="text-sm text-gray-500 mt-1">Plánováno: {completeModal.plannedKm} km</p>}
             </div>
             {completeModal.vehicle && (
               <div className="p-3 bg-blue-50 rounded-lg text-sm text-blue-700 mb-4">
-                Po dokončení se {actualKmInput || completeModal.plannedKm || 0} km připíše k vozidlu {completeModal.vehicle.name}.
+                Stav tachometru vozidla {completeModal.vehicle.name} bude aktualizován.
               </div>
             )}
             <div className="flex gap-3">
@@ -1339,12 +1339,12 @@ function RouteCard({
               <span className="text-orange-600 font-medium">⚠ Nepřiřazen</span>
             )}
             {route.vehicle && <span>{route.vehicle.name} · {route.vehicle.spz}</span>}
-            {(route.actualKm || route.plannedKm) && (
+            {(report?.endKm || route.actualKm || route.plannedKm) && (
               <span>
-                {route.actualKm || route.plannedKm} km
-                {report && route.plannedKm && report.actualKm !== route.plannedKm && (
-                  <span className="text-gray-400 ml-1">(plán: {route.plannedKm})</span>
-                )}
+                {report?.endKm
+                  ? `Tach.: ${report.endKm.toLocaleString('cs-CZ')} km`
+                  : `${route.actualKm || route.plannedKm} km`
+                }
               </span>
             )}
             {route.complaintCount > 0 && (
@@ -1454,8 +1454,8 @@ function RouteCard({
                 <span className="text-gray-600">Report od řidiče</span>
               </div>
               <div className="text-gray-600">
-                Skutečné km: <strong>{report.actualKm}</strong>
-                {report.endKm && <span className="ml-3">Tachometr: <strong>{report.endKm.toLocaleString('cs-CZ')} km</strong></span>}
+                Konečný stav tach.: <strong>{report.endKm ? report.endKm.toLocaleString('cs-CZ') : report.actualKm} km</strong>
+                {report.endKm && report.actualKm > 0 && <span className="ml-3">Ujeté: <strong>{report.actualKm.toLocaleString('cs-CZ')} km</strong></span>}
                 {report.fuelCost > 0 && <span className="ml-3">Nafta: <strong>{report.fuelCost.toLocaleString('cs-CZ')} Kč</strong></span>}
               </div>
               {report.carCheckNote && <p className="text-red-600 mt-1">{report.carCheckNote}</p>}

@@ -10,6 +10,7 @@ interface Report {
   routeId: string;
   driverId: string;
   actualKm: number;
+  endKm: number | null;
   fuelCost: number;
   carCheck: string;
   carCheckNote: string | null;
@@ -238,7 +239,7 @@ export default function HlaseniPage() {
                   )}
 
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500">
-                    <span>Skutečně ujeté km: <span className="font-medium">{report.actualKm} km</span></span>
+                    <span>Konečný stav tach.: <span className="font-medium">{report.endKm ? report.endKm.toLocaleString('cs-CZ') : report.actualKm} km</span></span>
                     {report.fuelCost > 0 && (
                       <span>Nafta: <span className="font-medium">{report.fuelCost.toLocaleString('cs-CZ')} Kč</span></span>
                     )}
