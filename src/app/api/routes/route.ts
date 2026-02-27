@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
       },
       include: {
         driver: { select: { id: true, name: true, color: true } },
-        vehicle: { select: { id: true, name: true, spz: true } },
+        vehicle: { select: { id: true, name: true, spz: true, currentKm: true } },
         orders: { orderBy: { createdAt: 'asc' } },
       },
     });

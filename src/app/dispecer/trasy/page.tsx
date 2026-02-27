@@ -15,6 +15,7 @@ interface Vehicle {
   id: string;
   name: string;
   spz: string;
+  currentKm: number;
 }
 
 interface Order {
@@ -375,7 +376,7 @@ export default function RoutesPage() {
         body: JSON.stringify({
           ...completeModal, date: completeModal.date.split('T')[0],
           driverId: completeModal.driver?.id || '', vehicleId: completeModal.vehicle?.id || '',
-          actualKm: actualKmInput, status: 'COMPLETED',
+          endKmValue: actualKmInput, status: 'COMPLETED',
         }),
       });
       if (response.ok) { await fetchRoutes(); setCompleteModal(null); setActualKmInput(''); }
@@ -1248,8 +1249,17 @@ export default function RoutesPage() {
             <div className="mb-4">
               <label className="label">Konečný stav tachometru (km)</label>
               <input type="number" value={actualKmInput} onChange={(e) => setActualKmInput(e.target.value)}
-                className="input w-full" placeholder={completeModal.plannedKm?.toString() || '0'} min="0" autoFocus />
-              {completeModal.plannedKm && <p className="text-sm text-gray-500 mt-1">Plánováno: {completeModal.plannedKm} km</p>}
+                className="input w-full" placeholder="Stav tachometru po jízdě" min="0" autoFocus />
+              {completeModal.vehicle && completeModal.vehicle.currentKm > 0 && (
+                <p className="text-sm text-gray-500 mt-1">
+                  Předchozí stav: {completeModal.vehicle.currentKm.toLocaleString('cs-CZ')} km
+                  {actualKmInput && parseInt(actualKmInput) > completeModal.vehicle.currentKm && (
+                    <span className="text-primary-600 font-medium ml-2">
+                      (ujeté: {(parseInt(actualKmInput) - completeModal.vehicle.currentKm).toLocaleString('cs-CZ')} km)
+                    </span>
+                  )}
+                </p>
+              )}
             </div>
             {completeModal.vehicle && (
               <div className="p-3 bg-blue-50 rounded-lg text-sm text-blue-700 mb-4">

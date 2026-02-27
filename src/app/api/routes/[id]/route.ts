@@ -19,7 +19,7 @@ export async function GET(
       where: { id: params.id },
       include: {
         driver: { select: { id: true, name: true } },
-        vehicle: { select: { id: true, name: true, spz: true } },
+        vehicle: { select: { id: true, name: true, spz: true, currentKm: true } },
       },
     });
 
@@ -52,7 +52,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { name, mapUrl, plannedKm, actualKm, date, driverId, vehicleId, note, status, complaintCount, fuelCost, driverPay, orders } = body;
+    const { name, mapUrl, plannedKm, actualKm, endKmValue, date, driverId, vehicleId, note, status, complaintCount, fuelCost, driverPay, orders } = body;
 
     // Načíst aktuální stav trasy
     const currentRoute = await prisma.route.findUnique({
@@ -61,6 +61,19 @@ export async function PUT(
 
     if (!currentRoute) {
       return NextResponse.json({ error: 'Trasa nenalezena' }, { status: 404 });
+    }
+
+    // Pokud přišlo endKmValue (konečný stav tachometru), vypočítat ujeté km
+    let computedActualKm = actualKm ? parseInt(actualKm) : null;
+    const resolvedVehicleId = vehicleId || currentRoute.vehicleId;
+
+    if (endKmValue && resolvedVehicleId) {
+      const vehicle = await prisma.vehicle.findUnique({ where: { id: resolvedVehicleId } });
+      if (vehicle) {
+        const endKm = parseInt(endKmValue);
+        const previousKm = vehicle.currentKm || 0;
+        computedActualKm = Math.max(0, endKm - previousKm);
+      }
     }
 
     // Pokud přišly objednávky, smazat staré a vytvořit nové
@@ -75,7 +88,7 @@ export async function PUT(
         name,
         mapUrl: mapUrl || null,
         plannedKm: plannedKm ? parseInt(plannedKm) : null,
-        actualKm: actualKm ? parseInt(actualKm) : null,
+        actualKm: computedActualKm,
         date: date ? new Date(date) : undefined,
         driverId: driverId || null,
         vehicleId: vehicleId || null,
@@ -96,31 +109,23 @@ export async function PUT(
       },
       include: {
         driver: { select: { id: true, name: true, color: true } },
-        vehicle: { select: { id: true, name: true, spz: true } },
+        vehicle: { select: { id: true, name: true, spz: true, currentKm: true } },
         orders: { orderBy: { createdAt: 'asc' } },
       },
     });
 
-    // Pokud se trasa právě dokončila (status změněn na COMPLETED)
-    // a má přiřazené vozidlo a km, připsat km k vozidlu
+    // Pokud se trasa právě dokončila a dispečer zadal stav tachometru,
+    // aktualizovat currentKm na vozidle
     if (
       status === 'COMPLETED' &&
       currentRoute.status !== 'COMPLETED' &&
-      route.vehicleId
+      endKmValue &&
+      resolvedVehicleId
     ) {
-      const kmToAdd = route.actualKm || route.plannedKm || 0;
-
-      if (kmToAdd > 0) {
-        await prisma.vehicle.update({
-          where: { id: route.vehicleId },
-          data: {
-            oilKm: { increment: kmToAdd },
-            adblueKm: { increment: kmToAdd },
-            brakesKm: { increment: kmToAdd },
-            bearingsKm: { increment: kmToAdd },
-          },
-        });
-      }
+      await prisma.vehicle.update({
+        where: { id: resolvedVehicleId },
+        data: { currentKm: parseInt(endKmValue) },
+      });
     }
 
     return NextResponse.json(route);
