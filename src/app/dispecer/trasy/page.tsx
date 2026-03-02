@@ -687,7 +687,7 @@ export default function RoutesPage() {
                               setOrders(newOrders);
                             }} className="input text-sm py-1.5 w-[80px]">
                               <option value="">Od</option>
-                              {Array.from({ length: 30 }, (_, j) => {
+                              {Array.from({ length: 35 }, (_, j) => {
                                 const h = Math.floor(j / 2) + 5;
                                 const m = (j % 2) * 30;
                                 const val = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
@@ -708,7 +708,7 @@ export default function RoutesPage() {
                                   opts.push(<option key={v} value={v}>{v}</option>);
                                 }
                                 return opts;
-                              })() : Array.from({ length: 30 }, (_, j) => {
+                              })() : Array.from({ length: 35 }, (_, j) => {
                                 const h = Math.floor(j / 2) + 5; const m = (j % 2) * 30;
                                 const v = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
                                 return <option key={v} value={v}>{v}</option>;
@@ -751,7 +751,7 @@ export default function RoutesPage() {
                             setOrders(newOrders);
                           }} className="input text-sm py-1.5 flex-1">
                             <option value="">Od</option>
-                            {Array.from({ length: 30 }, (_, j) => {
+                            {Array.from({ length: 35 }, (_, j) => {
                               const h = Math.floor(j / 2) + 5; const m = (j % 2) * 30;
                               const v = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
                               return <option key={v} value={v}>{v}</option>;
@@ -771,7 +771,7 @@ export default function RoutesPage() {
                                 opts.push(<option key={v} value={v}>{v}</option>);
                               }
                               return opts;
-                            })() : Array.from({ length: 30 }, (_, j) => {
+                            })() : Array.from({ length: 35 }, (_, j) => {
                               const h = Math.floor(j / 2) + 5; const m = (j % 2) * 30;
                               const v = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
                               return <option key={v} value={v}>{v}</option>;
