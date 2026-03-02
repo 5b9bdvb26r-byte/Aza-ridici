@@ -35,12 +35,16 @@ interface Vehicle {
   bearingsLastKm: number;
   bearingsLimitKm: number;
   bearingsLastReset: string;
-  brakeFluidLastChange: string;
-  brakeFluidLimitMonths: number;
+  brakeFluidKm: number;
+  brakeFluidLastKm: number;
+  brakeFluidLimitKm: number;
+  brakeFluidLastReset: string;
   greenCardDate: string | null;
   greenCardLimitMonths: number;
-  fridexLastChange: string | null;
-  fridexLimitMonths: number;
+  fridexKm: number;
+  fridexLastKm: number;
+  fridexLimitKm: number;
+  fridexLastReset: string;
   technicalInspectionDate: string | null;
   highwayVignetteDate: string | null;
 }
@@ -58,14 +62,14 @@ export default function VehiclesPage() {
     adblueLimitKm: '10000',
     brakesLimitKm: '60000',
     bearingsLimitKm: '100000',
-    brakeFluidLimitMonths: '24',
+    brakeFluidLimitKm: '50000',
     greenCardLimitMonths: '12',
-    fridexLimitMonths: '24',
+    fridexLimitKm: '60000',
   });
   const [isSaving, setIsSaving] = useState(false);
   const [editKmModal, setEditKmModal] = useState<Vehicle | null>(null);
   const [editKmValue, setEditKmValue] = useState('');
-  const [editTargetModal, setEditTargetModal] = useState<{ vehicle: Vehicle; type: 'oil' | 'adblue' | 'brakes' | 'bearings'; label: string } | null>(null);
+  const [editTargetModal, setEditTargetModal] = useState<{ vehicle: Vehicle; type: 'oil' | 'adblue' | 'brakes' | 'bearings' | 'brakeFluid' | 'fridex'; label: string } | null>(null);
   const [editTargetValue, setEditTargetValue] = useState('');
 
   // Modal pro opravu
@@ -78,14 +82,14 @@ export default function VehiclesPage() {
   });
 
   // Modal pro nastavení data
-  const [dateModal, setDateModal] = useState<{ vehicle: Vehicle; type: 'technical' | 'brakeFluid' | 'greenCard' | 'fridex' | 'highwayVignette' } | null>(null);
+  const [dateModal, setDateModal] = useState<{ vehicle: Vehicle; type: 'technical' | 'greenCard' | 'highwayVignette' } | null>(null);
   const [dateValue, setDateValue] = useState('');
 
   // Potvrzovací modal pro reset
   const [resetConfirm, setResetConfirm] = useState<{
     vehicleId: string;
     vehicleName: string;
-    type: 'oil' | 'adblue' | 'brakes' | 'bearings' | 'brakeFluid';
+    type: 'oil' | 'adblue' | 'brakes' | 'bearings' | 'brakeFluid' | 'fridex';
     label: string;
   } | null>(null);
   const [isResetting, setIsResetting] = useState(false);
@@ -160,9 +164,9 @@ export default function VehiclesPage() {
       adblueLimitKm: vehicle.adblueLimitKm.toString(),
       brakesLimitKm: vehicle.brakesLimitKm.toString(),
       bearingsLimitKm: vehicle.bearingsLimitKm.toString(),
-      brakeFluidLimitMonths: vehicle.brakeFluidLimitMonths.toString(),
+      brakeFluidLimitKm: vehicle.brakeFluidLimitKm.toString(),
       greenCardLimitMonths: vehicle.greenCardLimitMonths.toString(),
-      fridexLimitMonths: vehicle.fridexLimitMonths.toString(),
+      fridexLimitKm: vehicle.fridexLimitKm.toString(),
     });
     setShowForm(true);
   };
@@ -193,9 +197,9 @@ export default function VehiclesPage() {
       adblueLimitKm: '10000',
       brakesLimitKm: '60000',
       bearingsLimitKm: '100000',
-      brakeFluidLimitMonths: '24',
+      brakeFluidLimitKm: '50000',
       greenCardLimitMonths: '12',
-      fridexLimitMonths: '24',
+      fridexLimitKm: '60000',
     });
   };
 
@@ -205,9 +209,10 @@ export default function VehiclesPage() {
     brakes: 'brzd',
     bearings: 'ložisek',
     brakeFluid: 'brzdové kapaliny',
+    fridex: 'fridexu',
   };
 
-  const handleReset = (vehicleId: string, vehicleName: string, type: 'oil' | 'adblue' | 'brakes' | 'bearings' | 'brakeFluid') => {
+  const handleReset = (vehicleId: string, vehicleName: string, type: 'oil' | 'adblue' | 'brakes' | 'bearings' | 'brakeFluid' | 'fridex') => {
     setResetConfirm({
       vehicleId,
       vehicleName,
@@ -343,25 +348,7 @@ export default function VehiclesPage() {
   };
 
 
-  // Kontrola brzdové kapaliny
-  const getBrakeFluidStatus = (lastChange: string, limitMonths: number) => {
-    const lastDate = new Date(lastChange);
-    const nextChange = new Date(lastDate);
-    nextChange.setMonth(nextChange.getMonth() + limitMonths);
-    const now = new Date();
-    const daysRemaining = differenceInDays(nextChange, now);
-    const totalDays = differenceInDays(nextChange, lastDate);
-    const daysUsed = differenceInDays(now, lastDate);
-    const percentage = totalDays > 0 ? Math.max(0, Math.min((daysUsed / totalDays) * 100, 100)) : 0;
-
-    if (daysRemaining <= 0) {
-      return { status: 'expired', text: 'Nutná výměna!', percentage: 100, daysRemaining: 0, limitMonths };
-    }
-    if (daysRemaining <= 90) {
-      return { status: 'soon', text: `${daysRemaining} dní`, percentage, daysRemaining, limitMonths };
-    }
-    return { status: 'ok', text: format(nextChange, 'd.M.yyyy', { locale: cs }), percentage, daysRemaining, limitMonths };
-  };
+  // getBrakeFluidStatus odstraněna - nyní se sleduje přes TachoProgressBar
 
   // Kontrola zelené karty - datum expirace
   const getGreenCardStatus = (date: string | null, limitMonths: number) => {
@@ -387,28 +374,7 @@ export default function VehiclesPage() {
     return { status: 'ok', text: format(expirationDate, 'd.M.yyyy', { locale: cs }), percentage, daysRemaining, limitMonths };
   };
 
-  // Kontrola fridexu - datum poslední výměny
-  const getFridexStatus = (date: string | null, limitMonths: number) => {
-    if (!date) {
-      return { status: 'unknown', text: 'Nenastaveno', percentage: 0, daysRemaining: null, limitMonths };
-    }
-    const lastDate = new Date(date);
-    const nextChange = new Date(lastDate);
-    nextChange.setMonth(nextChange.getMonth() + limitMonths);
-    const now = new Date();
-    const daysRemaining = differenceInDays(nextChange, now);
-    const totalDays = differenceInDays(nextChange, lastDate);
-    const daysUsed = differenceInDays(now, lastDate);
-    const percentage = totalDays > 0 ? Math.max(0, Math.min((daysUsed / totalDays) * 100, 100)) : 0;
-
-    if (daysRemaining <= 0) {
-      return { status: 'expired', text: 'Nutná výměna!', percentage: 100, daysRemaining: 0, limitMonths };
-    }
-    if (daysRemaining <= 90) {
-      return { status: 'soon', text: `${daysRemaining} dní`, percentage, daysRemaining, limitMonths };
-    }
-    return { status: 'ok', text: format(nextChange, 'd.M.yyyy', { locale: cs }), percentage, daysRemaining, limitMonths };
-  };
+  // getFridexStatus odstraněna - nyní se sleduje přes TachoProgressBar
 
   // Kontrola technické - s progress barem (platnost 2 roky = 24 měsíců)
   const getTechnicalStatus = (date: string | null) => {
@@ -441,9 +407,7 @@ export default function VehiclesPage() {
   };
 
   const alertCount = vehicles.filter((v) => {
-    const brakeFluidStatus = getBrakeFluidStatus(v.brakeFluidLastChange, v.brakeFluidLimitMonths);
     const greenCardStatus = getGreenCardStatus(v.greenCardDate, v.greenCardLimitMonths);
-    const fridexStatus = getFridexStatus(v.fridexLastChange, v.fridexLimitMonths);
     const technicalStatus = getTechnicalStatus(v.technicalInspectionDate);
     const vignetteStatus = getVignetteStatus(v.highwayVignetteDate);
     return (
@@ -451,9 +415,9 @@ export default function VehiclesPage() {
       (v.adblueKm > 0 && v.currentKm >= v.adblueKm) ||
       (v.brakesKm > 0 && v.currentKm >= v.brakesKm) ||
       (v.bearingsKm > 0 && v.currentKm >= v.bearingsKm) ||
-      brakeFluidStatus.status === 'expired' ||
+      (v.brakeFluidKm > 0 && v.currentKm >= v.brakeFluidKm) ||
+      (v.fridexKm > 0 && v.currentKm >= v.fridexKm) ||
       greenCardStatus.status === 'expired' ||
-      fridexStatus.status === 'expired' ||
       technicalStatus.status === 'expired' ||
       vignetteStatus.status === 'expired'
     );
@@ -745,17 +709,17 @@ export default function VehiclesPage() {
                 />
               </div>
               <div>
-                <label htmlFor="brakeFluidLimitMonths" className="label">
-                  Brzd. kapalina (měsíce)
+                <label htmlFor="brakeFluidLimitKm" className="label">
+                  Brzd. kapalina (km)
                 </label>
                 <input
-                  id="brakeFluidLimitMonths"
+                  id="brakeFluidLimitKm"
                   type="number"
-                  value={formData.brakeFluidLimitMonths}
-                  onChange={(e) => setFormData({ ...formData, brakeFluidLimitMonths: e.target.value })}
+                  value={formData.brakeFluidLimitKm}
+                  onChange={(e) => setFormData({ ...formData, brakeFluidLimitKm: e.target.value })}
                   className="input"
-                  placeholder="24"
-                  min="1"
+                  placeholder="50000"
+                  min="1000"
                 />
               </div>
               <div>
@@ -773,17 +737,17 @@ export default function VehiclesPage() {
                 />
               </div>
               <div>
-                <label htmlFor="fridexLimitMonths" className="label">
-                  Fridex (měsíce)
+                <label htmlFor="fridexLimitKm" className="label">
+                  Fridex (km)
                 </label>
                 <input
-                  id="fridexLimitMonths"
+                  id="fridexLimitKm"
                   type="number"
-                  value={formData.fridexLimitMonths}
-                  onChange={(e) => setFormData({ ...formData, fridexLimitMonths: e.target.value })}
+                  value={formData.fridexLimitKm}
+                  onChange={(e) => setFormData({ ...formData, fridexLimitKm: e.target.value })}
                   className="input"
-                  placeholder="24"
-                  min="1"
+                  placeholder="60000"
+                  min="1000"
                 />
               </div>
             </div>
@@ -807,9 +771,7 @@ export default function VehiclesPage() {
       {/* Seznam vozidel jako karty */}
       <div className="grid grid-cols-1 gap-4">
         {vehicles.map((vehicle) => {
-          const brakeFluidStatus = getBrakeFluidStatus(vehicle.brakeFluidLastChange, vehicle.brakeFluidLimitMonths);
           const greenCardStatus = getGreenCardStatus(vehicle.greenCardDate, vehicle.greenCardLimitMonths);
-          const fridexStatus = getFridexStatus(vehicle.fridexLastChange, vehicle.fridexLimitMonths);
           const technicalStatus = getTechnicalStatus(vehicle.technicalInspectionDate);
           const vignetteStatus = getVignetteStatus(vehicle.highwayVignetteDate);
           const needsAttention =
@@ -817,9 +779,9 @@ export default function VehiclesPage() {
             (vehicle.adblueKm > 0 && vehicle.currentKm >= vehicle.adblueKm) ||
             (vehicle.brakesKm > 0 && vehicle.currentKm >= vehicle.brakesKm) ||
             (vehicle.bearingsKm > 0 && vehicle.currentKm >= vehicle.bearingsKm) ||
-            brakeFluidStatus.status === 'expired' ||
+            (vehicle.brakeFluidKm > 0 && vehicle.currentKm >= vehicle.brakeFluidKm) ||
+            (vehicle.fridexKm > 0 && vehicle.currentKm >= vehicle.fridexKm) ||
             greenCardStatus.status === 'expired' ||
-            fridexStatus.status === 'expired' ||
             technicalStatus.status === 'expired' ||
             vignetteStatus.status === 'expired';
           const isExpanded = expandedVehicle === vehicle.id;
@@ -927,17 +889,28 @@ export default function VehiclesPage() {
                     setEditTargetValue(vehicle.bearingsKm.toString());
                   }}
                 />
-                <DateProgressBar
+                <TachoProgressBar
+                  targetKm={vehicle.brakeFluidKm}
+                  lastServiceKm={vehicle.brakeFluidLastKm}
+                  currentKm={vehicle.currentKm}
+                  intervalKm={vehicle.brakeFluidLimitKm}
                   label="Brzd. kap."
                   icon="💦"
-                  percentage={brakeFluidStatus.percentage}
-                  text={brakeFluidStatus.text}
-                  status={brakeFluidStatus.status}
-                  daysRemaining={brakeFluidStatus.daysRemaining}
-                  limitMonths={vehicle.brakeFluidLimitMonths}
-                  onClick={() => {
-                    setDateModal({ vehicle, type: 'brakeFluid' });
-                    setDateValue(format(new Date(vehicle.brakeFluidLastChange), 'yyyy-MM-dd'));
+                  onEdit={() => {
+                    setEditTargetModal({ vehicle, type: 'brakeFluid', label: 'Brzdová kapalina' });
+                    setEditTargetValue(vehicle.brakeFluidKm.toString());
+                  }}
+                />
+                <TachoProgressBar
+                  targetKm={vehicle.fridexKm}
+                  lastServiceKm={vehicle.fridexLastKm}
+                  currentKm={vehicle.currentKm}
+                  intervalKm={vehicle.fridexLimitKm}
+                  label="Fridex"
+                  icon="❄️"
+                  onEdit={() => {
+                    setEditTargetModal({ vehicle, type: 'fridex', label: 'Fridex' });
+                    setEditTargetValue(vehicle.fridexKm.toString());
                   }}
                 />
                 <DateProgressBar
@@ -951,19 +924,6 @@ export default function VehiclesPage() {
                   onClick={() => {
                     setDateModal({ vehicle, type: 'greenCard' });
                     setDateValue(vehicle.greenCardDate ? format(new Date(vehicle.greenCardDate), 'yyyy-MM-dd') : '');
-                  }}
-                />
-                <DateProgressBar
-                  label="Fridex"
-                  icon="❄️"
-                  percentage={fridexStatus.percentage}
-                  text={fridexStatus.text}
-                  status={fridexStatus.status}
-                  daysRemaining={fridexStatus.daysRemaining}
-                  limitMonths={vehicle.fridexLimitMonths}
-                  onClick={() => {
-                    setDateModal({ vehicle, type: 'fridex' });
-                    setDateValue(vehicle.fridexLastChange ? format(new Date(vehicle.fridexLastChange), 'yyyy-MM-dd') : '');
                   }}
                 />
                 <DateProgressBar
@@ -1027,6 +987,12 @@ export default function VehiclesPage() {
                     >
                       💦 Brzd. kap. vyměněna
                     </button>
+                    <button
+                      onClick={() => handleReset(vehicle.id, vehicle.name, 'fridex')}
+                      className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm transition-colors"
+                    >
+                      ❄️ Fridex vyměněn
+                    </button>
                   </div>
 
                   {/* Detailní informace */}
@@ -1049,8 +1015,13 @@ export default function VehiclesPage() {
                     </div>
                     <div className="bg-gray-50 p-3 rounded-lg">
                       <div className="text-gray-500">💦 Brzdová kapalina - poslední výměna</div>
-                      <div className="font-medium">{format(new Date(vehicle.brakeFluidLastChange), 'd.M.yyyy', { locale: cs })}</div>
-                      <div className="text-xs text-gray-400">Příští: {(() => { const d = new Date(vehicle.brakeFluidLastChange); d.setMonth(d.getMonth() + vehicle.brakeFluidLimitMonths); return format(d, 'd.M.yyyy', { locale: cs }); })()}</div>
+                      <div className="font-medium">{format(new Date(vehicle.brakeFluidLastReset), 'd.M.yyyy', { locale: cs })}</div>
+                      <div className="text-xs text-gray-400">Při: {vehicle.brakeFluidLastKm.toLocaleString('cs-CZ')} km → Cíl: {vehicle.brakeFluidKm > 0 ? `${vehicle.brakeFluidKm.toLocaleString('cs-CZ')} km` : 'Nenastaveno'}</div>
+                    </div>
+                    <div className="bg-gray-50 p-3 rounded-lg">
+                      <div className="text-gray-500">❄️ Fridex - poslední výměna</div>
+                      <div className="font-medium">{format(new Date(vehicle.fridexLastReset), 'd.M.yyyy', { locale: cs })}</div>
+                      <div className="text-xs text-gray-400">Při: {vehicle.fridexLastKm.toLocaleString('cs-CZ')} km → Cíl: {vehicle.fridexKm > 0 ? `${vehicle.fridexKm.toLocaleString('cs-CZ')} km` : 'Nenastaveno'}</div>
                     </div>
                     <div className="bg-gray-50 p-3 rounded-lg">
                       <div className="text-gray-500">📋 STK platná do</div>
@@ -1331,9 +1302,7 @@ export default function VehiclesPage() {
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               {dateModal.type === 'technical' && 'Nastavit datum technické kontroly'}
-              {dateModal.type === 'brakeFluid' && 'Nastavit datum výměny brzdové kapaliny'}
               {dateModal.type === 'greenCard' && 'Nastavit datum expirace zelené karty'}
-              {dateModal.type === 'fridex' && 'Nastavit datum výměny fridexu'}
               {dateModal.type === 'highwayVignette' && 'Nastavit datum expirace dálniční známky'}
               {' '}- {dateModal.vehicle.name}
             </h3>

@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { spz, name, oilLimitKm, adblueLimitKm, brakesLimitKm, bearingsLimitKm, brakeFluidLimitMonths, greenCardLimitMonths, fridexLimitMonths } = body;
+    const { spz, name, oilLimitKm, adblueLimitKm, brakesLimitKm, bearingsLimitKm, brakeFluidLimitKm, greenCardLimitMonths, fridexLimitKm } = body;
 
     if (!spz || !name) {
       return NextResponse.json({ error: 'SPZ a název jsou povinné' }, { status: 400 });
@@ -51,9 +51,9 @@ export async function POST(request: NextRequest) {
         adblueLimitKm: adblueLimitKm ? parseInt(adblueLimitKm) : 10000,
         brakesLimitKm: brakesLimitKm ? parseInt(brakesLimitKm) : 60000,
         bearingsLimitKm: bearingsLimitKm ? parseInt(bearingsLimitKm) : 100000,
-        brakeFluidLimitMonths: brakeFluidLimitMonths ? parseInt(brakeFluidLimitMonths) : 24,
+        brakeFluidLimitKm: brakeFluidLimitKm ? parseInt(brakeFluidLimitKm) : 50000,
         greenCardLimitMonths: greenCardLimitMonths ? parseInt(greenCardLimitMonths) : 12,
-        fridexLimitMonths: fridexLimitMonths ? parseInt(fridexLimitMonths) : 24,
+        fridexLimitKm: fridexLimitKm ? parseInt(fridexLimitKm) : 60000,
       },
     });
 
