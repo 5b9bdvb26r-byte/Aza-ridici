@@ -565,14 +565,25 @@ export default function DriverRoutesPage() {
                       {/* Částka k předání */}
                       {report && route.orders && route.orders.length > 0 && (() => {
                         const ordersTotal = route.orders.reduce((sum, o) => sum + (o.price || 0), 0);
-                        const expenses = (report.fuelCost || 0) + (report.carWashCost || 0) + (route.driverPay || 0);
+                        const fuelVal = report.fuelCost || 0;
+                        const washVal = report.carWashCost || 0;
+                        const payVal = route.driverPay || 0;
+                        const expenses = fuelVal + washVal + payVal;
                         const toHandOver = ordersTotal - expenses;
                         return (
                           <div className={cn(
-                            'mt-2 p-2 rounded-lg text-sm font-bold',
+                            'mt-2 p-2 rounded-lg text-sm',
                             toHandOver >= 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                           )}>
-                            K předání: {toHandOver.toLocaleString('cs-CZ')} Kč
+                            <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs font-normal opacity-80 mb-1">
+                              <span>Objednávky: {ordersTotal.toLocaleString('cs-CZ')} Kč</span>
+                              {fuelVal > 0 && <span>- Nafta: {fuelVal.toLocaleString('cs-CZ')} Kč</span>}
+                              {washVal > 0 && <span>- Myčka: {washVal.toLocaleString('cs-CZ')} Kč</span>}
+                              {payVal > 0 && <span>- Výplata: {payVal.toLocaleString('cs-CZ')} Kč</span>}
+                            </div>
+                            <div className="font-bold">
+                              K předání: {toHandOver.toLocaleString('cs-CZ')} Kč
+                            </div>
                           </div>
                         );
                       })()}
