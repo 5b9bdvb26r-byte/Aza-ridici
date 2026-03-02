@@ -524,8 +524,7 @@ export default function DriverRoutesPage() {
               const fuelVal = report?.fuelCost || 0;
               const washVal = report?.carWashCost || 0;
               const payVal = route.driverPay || 0;
-              const expenses = fuelVal + washVal + payVal;
-              const toHandOver = ordersTotal - expenses;
+              const toHandOver = ordersTotal - fuelVal - washVal;
 
               return (
                 <div key={route.id} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -664,12 +663,6 @@ export default function DriverRoutesPage() {
                               <span className="font-medium text-red-600">- {washVal.toLocaleString('cs-CZ')} Kč</span>
                             </div>
                           )}
-                          {payVal > 0 && (
-                            <div className="flex justify-between">
-                              <span className="text-gray-500">Výplata řidiče</span>
-                              <span className="font-medium text-red-600">- {payVal.toLocaleString('cs-CZ')} Kč</span>
-                            </div>
-                          )}
                           {ordersTotal > 0 && (
                             <div className={cn(
                               'flex justify-between pt-1.5 border-t border-gray-200 font-bold',
@@ -683,6 +676,12 @@ export default function DriverRoutesPage() {
                             <div className="flex justify-between pt-1.5 border-t border-gray-200 font-bold text-gray-700">
                               <span>Náklady celkem</span>
                               <span>- {(fuelVal + washVal).toLocaleString('cs-CZ')} Kč</span>
+                            </div>
+                          )}
+                          {payVal > 0 && (
+                            <div className="flex justify-between pt-1 text-green-600">
+                              <span>Vaše odměna</span>
+                              <span className="font-medium">{payVal.toLocaleString('cs-CZ')} Kč</span>
                             </div>
                           )}
                         </div>
