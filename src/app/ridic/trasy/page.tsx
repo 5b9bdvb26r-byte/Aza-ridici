@@ -629,17 +629,25 @@ export default function DriverRoutesPage() {
                         </a>
                       )}
 
-                      <OrdersSection route={route} />
-
                       {/* Finanční souhrn */}
-                      {(ordersTotal > 0 || fuelVal > 0 || washVal > 0) && (
+                      {(ordersTotal > 0 || fuelVal > 0 || washVal > 0 || payVal > 0) && (
                         <div className="bg-gray-50 rounded-lg p-3 space-y-1.5 text-sm">
                           <div className="font-semibold text-gray-700 text-xs uppercase tracking-wide">Finanční souhrn</div>
-                          {ordersTotal > 0 && (
-                            <div className="flex justify-between">
-                              <span className="text-gray-500">Objednávky</span>
-                              <span className="font-medium text-gray-700">+ {ordersTotal.toLocaleString('cs-CZ')} Kč</span>
-                            </div>
+                          {route.orders && route.orders.length > 0 && (
+                            <>
+                              {route.orders.map((order) => (
+                                <div key={order.id} className="flex justify-between">
+                                  <span className="text-gray-500">Obj. {order.orderNumber}</span>
+                                  <span className="font-medium text-gray-700">+ {order.price.toLocaleString('cs-CZ')} Kč</span>
+                                </div>
+                              ))}
+                              {route.orders.length > 1 && (
+                                <div className="flex justify-between text-xs text-gray-400 pt-0.5">
+                                  <span>Objednávky celkem</span>
+                                  <span>{ordersTotal.toLocaleString('cs-CZ')} Kč</span>
+                                </div>
+                              )}
+                            </>
                           )}
                           {fuelVal > 0 && (
                             <div className="flex justify-between">
@@ -659,15 +667,13 @@ export default function DriverRoutesPage() {
                               <span className="font-medium text-red-600">- {payVal.toLocaleString('cs-CZ')} Kč</span>
                             </div>
                           )}
-                          {ordersTotal > 0 && (
-                            <div className={cn(
-                              'flex justify-between pt-1.5 border-t border-gray-200 font-bold',
-                              toHandOver >= 0 ? 'text-green-700' : 'text-red-700'
-                            )}>
-                              <span>K předání</span>
-                              <span>{toHandOver.toLocaleString('cs-CZ')} Kč</span>
-                            </div>
-                          )}
+                          <div className={cn(
+                            'flex justify-between pt-1.5 border-t border-gray-200 font-bold',
+                            toHandOver >= 0 ? 'text-green-700' : 'text-red-700'
+                          )}>
+                            <span>K předání</span>
+                            <span>{toHandOver.toLocaleString('cs-CZ')} Kč</span>
+                          </div>
                         </div>
                       )}
                     </div>
