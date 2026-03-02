@@ -12,6 +12,8 @@ interface Report {
   actualKm: number;
   endKm: number | null;
   fuelCost: number;
+  carWashCost: number;
+  avgConsumption: number | null;
   carCheck: string;
   carCheckNote: string | null;
   createdAt: string;
@@ -159,6 +161,12 @@ export default function DriverHlaseniPage() {
                     </span>
                     {report.fuelCost > 0 && (
                       <span>Nafta: {report.fuelCost.toLocaleString('cs-CZ')} Kč</span>
+                    )}
+                    {report.carWashCost > 0 && (
+                      <span>Myčka: {report.carWashCost.toLocaleString('cs-CZ')} Kč</span>
+                    )}
+                    {report.avgConsumption && (
+                      <span>Spotřeba: {report.avgConsumption} l/100km</span>
                     )}
                   </div>
 

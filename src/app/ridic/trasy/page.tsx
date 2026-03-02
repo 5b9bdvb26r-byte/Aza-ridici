@@ -44,6 +44,8 @@ interface DailyReport {
   actualKm: number;
   endKm: number | null;
   fuelCost: number;
+  carWashCost: number;
+  avgConsumption: number | null;
   carCheck: string;
   carCheckNote: string | null;
 }
@@ -59,6 +61,8 @@ export default function DriverRoutesPage() {
   const [reportForm, setReportForm] = useState({
     endKm: '',
     fuelCost: '',
+    carWashCost: '',
+    avgConsumption: '',
     carCheck: 'OK',
     carCheckNote: '',
   });
@@ -119,6 +123,8 @@ export default function DriverRoutesPage() {
     setReportForm({
       endKm: '',
       fuelCost: '',
+      carWashCost: '',
+      avgConsumption: '',
       carCheck: 'OK',
       carCheckNote: '',
     });
@@ -139,6 +145,8 @@ export default function DriverRoutesPage() {
           routeId: activeReport,
           endKm: reportForm.endKm,
           fuelCost: reportForm.fuelCost,
+          carWashCost: reportForm.carWashCost,
+          avgConsumption: reportForm.avgConsumption,
           carCheck: reportForm.carCheck,
           carCheckNote: reportForm.carCheck === 'NOK' ? reportForm.carCheckNote : null,
         }),
@@ -351,6 +359,36 @@ export default function DriverRoutesPage() {
                       </div>
 
                       <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Myčka (Kč)
+                        </label>
+                        <input
+                          type="number"
+                          value={reportForm.carWashCost}
+                          onChange={(e) => setReportForm({ ...reportForm, carWashCost: e.target.value })}
+                          className="input w-full"
+                          placeholder="Náklady na myčku v Kč"
+                          min="0"
+                          step="1"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Průměrná spotřeba (l/100km)
+                        </label>
+                        <input
+                          type="number"
+                          value={reportForm.avgConsumption}
+                          onChange={(e) => setReportForm({ ...reportForm, avgConsumption: e.target.value })}
+                          className="input w-full"
+                          placeholder="Např. 7.5"
+                          min="0"
+                          step="0.1"
+                        />
+                      </div>
+
+                      <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Kontrola auta
                         </label>
@@ -513,15 +551,31 @@ export default function DriverRoutesPage() {
                           </span>
                         )}
                       </div>
-                      {report && report.fuelCost > 0 && (
-                        <span className="text-sm text-gray-500">
-                          Nafta: {report.fuelCost.toLocaleString('cs-CZ')} Kč
-                        </span>
+                      {report && (report.fuelCost > 0 || report.carWashCost > 0) && (
+                        <div className="flex flex-wrap gap-x-3 text-sm text-gray-500">
+                          {report.fuelCost > 0 && <span>Nafta: {report.fuelCost.toLocaleString('cs-CZ')} Kč</span>}
+                          {report.carWashCost > 0 && <span>Myčka: {report.carWashCost.toLocaleString('cs-CZ')} Kč</span>}
+                          {report.avgConsumption && <span>Spotřeba: {report.avgConsumption} l/100km</span>}
+                        </div>
                       )}
                       {report?.carCheckNote && (
                         <p className="text-red-500 text-xs mt-1">{report.carCheckNote}</p>
                       )}
                       <OrdersSection route={route} />
+                      {/* Částka k předání */}
+                      {report && route.orders && route.orders.length > 0 && (() => {
+                        const ordersTotal = route.orders.reduce((sum, o) => sum + (o.price || 0), 0);
+                        const expenses = (report.fuelCost || 0) + (report.carWashCost || 0) + (route.driverPay || 0);
+                        const toHandOver = ordersTotal - expenses;
+                        return (
+                          <div className={cn(
+                            'mt-2 p-2 rounded-lg text-sm font-bold',
+                            toHandOver >= 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          )}>
+                            K předání: {toHandOver.toLocaleString('cs-CZ')} Kč
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>

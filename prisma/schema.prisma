@@ -87,6 +87,9 @@ model Vehicle {
   // Technická kontrola - datum expirace
   technicalInspectionDate DateTime? // datum příští technické kontroly
 
+  // Dálniční známka - datum expirace
+  highwayVignetteDate    DateTime? // datum expirace dálniční známky
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -227,7 +230,9 @@ model DailyReport {
   driverId     String
   actualKm     Int
   endKm        Int?     // konečný stav tachometru (km)
-  fuelCost     Float    @default(0) // náklady na naftu (Kč) - vyplní řidič po jízdě
+  fuelCost     Float    @default(0) // náklady na naftu (Kč)
+  carWashCost  Float    @default(0) // náklady na myčku (Kč)
+  avgConsumption Float? // průměrná spotřeba (l/100km)
   carCheck     String   @default("OK")
   carCheckNote String?
   resolved     Boolean  @default(false) // Vyřešeno dispečerem (pro NOK hlášení)

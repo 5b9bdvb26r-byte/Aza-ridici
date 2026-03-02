@@ -75,6 +75,8 @@ export async function POST(
         updateData.greenCardDate = new Date(date);
       } else if (type === 'fridex') {
         updateData.fridexLastChange = new Date(date);
+      } else if (type === 'highwayVignette') {
+        updateData.highwayVignetteDate = new Date(date);
       }
     }
 

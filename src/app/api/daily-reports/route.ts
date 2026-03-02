@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { routeId, endKm, fuelCost, carCheck, carCheckNote } = body;
+    const { routeId, endKm, fuelCost, carWashCost, avgConsumption, carCheck, carCheckNote } = body;
 
     if (!routeId || !endKm) {
       return NextResponse.json(
@@ -87,6 +87,8 @@ export async function POST(request: Request) {
     // Vytvořit report a aktualizovat trasu v transakci
     const result = await prisma.$transaction(async (tx) => {
       const fuelCostValue = fuelCost ? parseFloat(fuelCost) : 0;
+      const carWashCostValue = carWashCost ? parseFloat(carWashCost) : 0;
+      const avgConsumptionValue = avgConsumption ? parseFloat(avgConsumption) : null;
 
       // Vytvořit denní report
       const report = await tx.dailyReport.create({
@@ -96,6 +98,8 @@ export async function POST(request: Request) {
           actualKm: kmValue,
           endKm: endKmValue,
           fuelCost: fuelCostValue,
+          carWashCost: carWashCostValue,
+          avgConsumption: avgConsumptionValue,
           carCheck: carCheck || 'OK',
           carCheckNote: carCheck === 'NOK' ? (carCheckNote || null) : null,
         },

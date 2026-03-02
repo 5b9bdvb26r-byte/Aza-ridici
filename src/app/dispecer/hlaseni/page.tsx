@@ -12,6 +12,8 @@ interface Report {
   actualKm: number;
   endKm: number | null;
   fuelCost: number;
+  carWashCost: number;
+  avgConsumption: number | null;
   carCheck: string;
   carCheckNote: string | null;
   resolved: boolean;
@@ -242,6 +244,12 @@ export default function HlaseniPage() {
                     <span>Konečný stav tach.: <span className="font-medium">{report.endKm ? report.endKm.toLocaleString('cs-CZ') : report.actualKm} km</span></span>
                     {report.fuelCost > 0 && (
                       <span>Nafta: <span className="font-medium">{report.fuelCost.toLocaleString('cs-CZ')} Kč</span></span>
+                    )}
+                    {report.carWashCost > 0 && (
+                      <span>Myčka: <span className="font-medium">{report.carWashCost.toLocaleString('cs-CZ')} Kč</span></span>
+                    )}
+                    {report.avgConsumption && (
+                      <span>Spotřeba: <span className="font-medium">{report.avgConsumption} l/100km</span></span>
                     )}
                   </div>
 

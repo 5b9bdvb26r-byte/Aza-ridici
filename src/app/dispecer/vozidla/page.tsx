@@ -42,6 +42,7 @@ interface Vehicle {
   fridexLastChange: string | null;
   fridexLimitMonths: number;
   technicalInspectionDate: string | null;
+  highwayVignetteDate: string | null;
 }
 
 export default function VehiclesPage() {
@@ -77,7 +78,7 @@ export default function VehiclesPage() {
   });
 
   // Modal pro nastavení data
-  const [dateModal, setDateModal] = useState<{ vehicle: Vehicle; type: 'technical' | 'brakeFluid' | 'greenCard' | 'fridex' } | null>(null);
+  const [dateModal, setDateModal] = useState<{ vehicle: Vehicle; type: 'technical' | 'brakeFluid' | 'greenCard' | 'fridex' | 'highwayVignette' } | null>(null);
   const [dateValue, setDateValue] = useState('');
 
   // Potvrzovací modal pro reset
@@ -434,11 +435,17 @@ export default function VehiclesPage() {
   };
 
   // Počet vozidel vyžadujících kontrolu
+  // Kontrola dálniční známky (platnost 12 měsíců)
+  const getVignetteStatus = (date: string | null) => {
+    return getGreenCardStatus(date, 12);
+  };
+
   const alertCount = vehicles.filter((v) => {
     const brakeFluidStatus = getBrakeFluidStatus(v.brakeFluidLastChange, v.brakeFluidLimitMonths);
     const greenCardStatus = getGreenCardStatus(v.greenCardDate, v.greenCardLimitMonths);
     const fridexStatus = getFridexStatus(v.fridexLastChange, v.fridexLimitMonths);
     const technicalStatus = getTechnicalStatus(v.technicalInspectionDate);
+    const vignetteStatus = getVignetteStatus(v.highwayVignetteDate);
     return (
       (v.oilKm > 0 && v.currentKm >= v.oilKm) ||
       (v.adblueKm > 0 && v.currentKm >= v.adblueKm) ||
@@ -447,13 +454,14 @@ export default function VehiclesPage() {
       brakeFluidStatus.status === 'expired' ||
       greenCardStatus.status === 'expired' ||
       fridexStatus.status === 'expired' ||
-      technicalStatus.status === 'expired'
+      technicalStatus.status === 'expired' ||
+      vignetteStatus.status === 'expired'
     );
   }).length;
 
   // Komponenta pro progress bar podle tachometru
-  const TachoProgressBar = ({ targetKm, lastServiceKm, currentKm, label, icon, onEdit }: {
-    targetKm: number; lastServiceKm: number; currentKm: number; label: string; icon: string;
+  const TachoProgressBar = ({ targetKm, lastServiceKm, currentKm, intervalKm, label, icon, onEdit }: {
+    targetKm: number; lastServiceKm: number; currentKm: number; intervalKm: number; label: string; icon: string;
     onEdit?: () => void;
   }) => {
     // Pokud cíl není nastavený (0), zobrazit "Nenastaveno"
@@ -476,11 +484,10 @@ export default function VehiclesPage() {
     }
 
     const remaining = targetKm - currentKm;
-    // Procento z rozsahu lastServiceKm → targetKm
-    // Výměna na 30 000, cíl 40 000, aktuálně 31 000 → 10%
-    const totalRange = targetKm - lastServiceKm;
-    const elapsed = currentKm - lastServiceKm;
-    const percentage = totalRange > 0 ? Math.min(Math.max((elapsed / totalRange) * 100, 0), 100) : 0;
+    // Procento: použij interval jako škálu, start = target - interval
+    const startKm = targetKm - intervalKm;
+    const elapsed = currentKm - startKm;
+    const percentage = intervalKm > 0 ? Math.min(Math.max((elapsed / intervalKm) * 100, 0), 100) : 0;
     const needsAttention = remaining <= 0;
     const nearLimit = remaining > 0 && remaining <= 2000;
 
@@ -804,6 +811,7 @@ export default function VehiclesPage() {
           const greenCardStatus = getGreenCardStatus(vehicle.greenCardDate, vehicle.greenCardLimitMonths);
           const fridexStatus = getFridexStatus(vehicle.fridexLastChange, vehicle.fridexLimitMonths);
           const technicalStatus = getTechnicalStatus(vehicle.technicalInspectionDate);
+          const vignetteStatus = getVignetteStatus(vehicle.highwayVignetteDate);
           const needsAttention =
             (vehicle.oilKm > 0 && vehicle.currentKm >= vehicle.oilKm) ||
             (vehicle.adblueKm > 0 && vehicle.currentKm >= vehicle.adblueKm) ||
@@ -812,7 +820,8 @@ export default function VehiclesPage() {
             brakeFluidStatus.status === 'expired' ||
             greenCardStatus.status === 'expired' ||
             fridexStatus.status === 'expired' ||
-            technicalStatus.status === 'expired';
+            technicalStatus.status === 'expired' ||
+            vignetteStatus.status === 'expired';
           const isExpanded = expandedVehicle === vehicle.id;
           const vehicleRepairs = repairs.filter(r => r.vehicleId === vehicle.id);
 
@@ -874,6 +883,7 @@ export default function VehiclesPage() {
                   targetKm={vehicle.oilKm}
                   lastServiceKm={vehicle.oilLastKm}
                   currentKm={vehicle.currentKm}
+                  intervalKm={vehicle.oilLimitKm}
                   label="Olej"
                   icon="🛢️"
                   onEdit={() => {
@@ -885,6 +895,7 @@ export default function VehiclesPage() {
                   targetKm={vehicle.adblueKm}
                   lastServiceKm={vehicle.adblueLastKm}
                   currentKm={vehicle.currentKm}
+                  intervalKm={vehicle.adblueLimitKm}
                   label="AdBlue"
                   icon="💧"
                   onEdit={() => {
@@ -896,6 +907,7 @@ export default function VehiclesPage() {
                   targetKm={vehicle.brakesKm}
                   lastServiceKm={vehicle.brakesLastKm}
                   currentKm={vehicle.currentKm}
+                  intervalKm={vehicle.brakesLimitKm}
                   label="Brzdy"
                   icon="🛑"
                   onEdit={() => {
@@ -907,6 +919,7 @@ export default function VehiclesPage() {
                   targetKm={vehicle.bearingsKm}
                   lastServiceKm={vehicle.bearingsLastKm}
                   currentKm={vehicle.currentKm}
+                  intervalKm={vehicle.bearingsLimitKm}
                   label="Ložiska"
                   icon="⚙️"
                   onEdit={() => {
@@ -963,6 +976,18 @@ export default function VehiclesPage() {
                   onClick={() => {
                     setDateModal({ vehicle, type: 'technical' });
                     setDateValue(vehicle.technicalInspectionDate ? format(new Date(vehicle.technicalInspectionDate), 'yyyy-MM-dd') : '');
+                  }}
+                />
+                <DateProgressBar
+                  label="Dáln. známka"
+                  icon="🛣️"
+                  percentage={vignetteStatus.percentage}
+                  text={vignetteStatus.text}
+                  status={vignetteStatus.status}
+                  daysRemaining={vignetteStatus.daysRemaining}
+                  onClick={() => {
+                    setDateModal({ vehicle, type: 'highwayVignette' });
+                    setDateValue(vehicle.highwayVignetteDate ? format(new Date(vehicle.highwayVignetteDate), 'yyyy-MM-dd') : '');
                   }}
                 />
               </div>
@@ -1032,6 +1057,14 @@ export default function VehiclesPage() {
                       <div className="font-medium">
                         {vehicle.technicalInspectionDate
                           ? format(new Date(vehicle.technicalInspectionDate), 'd.M.yyyy', { locale: cs })
+                          : 'Nenastaveno'}
+                      </div>
+                    </div>
+                    <div className="bg-gray-50 p-3 rounded-lg">
+                      <div className="text-gray-500">🛣️ Dálniční známka do</div>
+                      <div className="font-medium">
+                        {vehicle.highwayVignetteDate
+                          ? format(new Date(vehicle.highwayVignetteDate), 'd.M.yyyy', { locale: cs })
                           : 'Nenastaveno'}
                       </div>
                     </div>
@@ -1301,6 +1334,7 @@ export default function VehiclesPage() {
               {dateModal.type === 'brakeFluid' && 'Nastavit datum výměny brzdové kapaliny'}
               {dateModal.type === 'greenCard' && 'Nastavit datum expirace zelené karty'}
               {dateModal.type === 'fridex' && 'Nastavit datum výměny fridexu'}
+              {dateModal.type === 'highwayVignette' && 'Nastavit datum expirace dálniční známky'}
               {' '}- {dateModal.vehicle.name}
             </h3>
             <input
