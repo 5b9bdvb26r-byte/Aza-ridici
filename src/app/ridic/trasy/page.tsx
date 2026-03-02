@@ -55,6 +55,7 @@ export default function DriverRoutesPage() {
   const [reports, setReports] = useState<DailyReport[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
+  const [expandedCompleted, setExpandedCompleted] = useState<string | null>(null);
 
   // Denní formulář
   const [activeReport, setActiveReport] = useState<string | null>(null);
@@ -182,7 +183,9 @@ export default function DriverRoutesPage() {
     return !isBefore(routeDate, today) && !isToday(new Date(r.date));
   });
 
-  const completedRoutes = routes.filter((r) => hasReport(r.id));
+  const completedRoutes = routes
+    .filter((r) => hasReport(r.id))
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   if (isLoading) {
     return (
@@ -516,79 +519,159 @@ export default function DriverRoutesPage() {
           <div className="space-y-3">
             {completedRoutes.map((route) => {
               const report = getReport(route.id);
+              const isExpanded = expandedCompleted === route.id;
+              const ordersTotal = route.orders ? route.orders.reduce((sum, o) => sum + (o.price || 0), 0) : 0;
+              const fuelVal = report?.fuelCost || 0;
+              const washVal = report?.carWashCost || 0;
+              const payVal = route.driverPay || 0;
+              const expenses = fuelVal + washVal + payVal;
+              const toHandOver = ordersTotal - expenses;
+
               return (
-                <div key={route.id} className="p-3 sm:p-4 bg-white rounded-lg border border-gray-200">
-                  <div className="flex items-start gap-3 sm:gap-4">
-                    <div className="text-center min-w-[45px] sm:min-w-[60px]">
-                      <div className="text-xl sm:text-2xl font-bold text-gray-400">
-                        {format(new Date(route.date), 'd')}
+                <div key={route.id} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                  {/* Kompaktní hlavička - kliknutím rozbalí */}
+                  <button
+                    onClick={() => setExpandedCompleted(isExpanded ? null : route.id)}
+                    className="w-full text-left p-3 sm:p-4"
+                  >
+                    <div className="flex items-center gap-3 sm:gap-4">
+                      <div className="text-center min-w-[45px] sm:min-w-[50px]">
+                        <div className="text-lg sm:text-xl font-bold text-gray-400">
+                          {format(new Date(route.date), 'd')}
+                        </div>
+                        <div className="text-xs text-gray-400 uppercase">
+                          {format(new Date(route.date), 'MMM', { locale: cs })}
+                        </div>
                       </div>
-                      <div className="text-xs text-gray-400 uppercase">
-                        {format(new Date(route.date), 'MMM', { locale: cs })}
-                      </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
+                      <div className="flex-1 min-w-0">
                         <div className="font-medium text-gray-600 truncate">{route.name}</div>
-                        <span className="flex-shrink-0 px-2 py-0.5 bg-green-100 text-green-700 rounded-lg text-xs sm:text-sm font-medium">
-                          Hotovo
-                        </span>
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-gray-400 mt-0.5">
+                          {route.vehicle && <span>{route.vehicle.name}</span>}
+                          {report?.endKm && <span>Tach.: {report.endKm.toLocaleString('cs-CZ')} km</span>}
+                        </div>
                       </div>
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-400 mt-1">
-                        {route.vehicle && <span>{route.vehicle.name}</span>}
-                        {report?.endKm
-                          ? <span>Tach.: {report.endKm.toLocaleString('cs-CZ')} km</span>
-                          : <span>{route.actualKm || route.plannedKm || 0} km</span>
-                        }
-                        {report && (
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {ordersTotal > 0 && (
                           <span className={cn(
-                            'px-2 py-0.5 rounded-full text-xs font-bold',
-                            report.carCheck === 'OK'
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-red-100 text-red-700'
+                            'px-2 py-0.5 rounded-lg text-xs font-bold',
+                            toHandOver >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                           )}>
-                            Auto: {report.carCheck}
+                            {toHandOver.toLocaleString('cs-CZ')} Kč
                           </span>
                         )}
+                        <span className="text-gray-300 text-sm">{isExpanded ? '▲' : '▼'}</span>
                       </div>
-                      {report && (report.fuelCost > 0 || report.carWashCost > 0) && (
-                        <div className="flex flex-wrap gap-x-3 text-sm text-gray-500">
-                          {report.fuelCost > 0 && <span>Nafta: {report.fuelCost.toLocaleString('cs-CZ')} Kč</span>}
-                          {report.carWashCost > 0 && <span>Myčka: {report.carWashCost.toLocaleString('cs-CZ')} Kč</span>}
-                          {report.avgConsumption && <span>Spotřeba: {report.avgConsumption} l/100km</span>}
+                    </div>
+                  </button>
+
+                  {/* Rozbalený detail */}
+                  {isExpanded && (
+                    <div className="px-3 sm:px-4 pb-3 sm:pb-4 border-t border-gray-100 pt-3 space-y-3">
+                      {/* Podrobnosti jízdy */}
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        {route.vehicle && (
+                          <div className="bg-gray-50 p-2 rounded-lg">
+                            <div className="text-xs text-gray-400">Vozidlo</div>
+                            <div className="font-medium text-gray-700">{route.vehicle.name} ({route.vehicle.spz})</div>
+                          </div>
+                        )}
+                        <div className="bg-gray-50 p-2 rounded-lg">
+                          <div className="text-xs text-gray-400">Datum</div>
+                          <div className="font-medium text-gray-700">{format(new Date(route.date), 'd. MMMM yyyy', { locale: cs })}</div>
                         </div>
-                      )}
-                      {report?.carCheckNote && (
-                        <p className="text-red-500 text-xs mt-1">{report.carCheckNote}</p>
-                      )}
-                      <OrdersSection route={route} />
-                      {/* Částka k předání */}
-                      {report && route.orders && route.orders.length > 0 && (() => {
-                        const ordersTotal = route.orders.reduce((sum, o) => sum + (o.price || 0), 0);
-                        const fuelVal = report.fuelCost || 0;
-                        const washVal = report.carWashCost || 0;
-                        const payVal = route.driverPay || 0;
-                        const expenses = fuelVal + washVal + payVal;
-                        const toHandOver = ordersTotal - expenses;
-                        return (
-                          <div className={cn(
-                            'mt-2 p-2 rounded-lg text-sm',
-                            toHandOver >= 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                          )}>
-                            <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs font-normal opacity-80 mb-1">
-                              <span>Objednávky: {ordersTotal.toLocaleString('cs-CZ')} Kč</span>
-                              {fuelVal > 0 && <span>- Nafta: {fuelVal.toLocaleString('cs-CZ')} Kč</span>}
-                              {washVal > 0 && <span>- Myčka: {washVal.toLocaleString('cs-CZ')} Kč</span>}
-                              {payVal > 0 && <span>- Výplata: {payVal.toLocaleString('cs-CZ')} Kč</span>}
-                            </div>
-                            <div className="font-bold">
-                              K předání: {toHandOver.toLocaleString('cs-CZ')} Kč
+                        {report?.endKm && (
+                          <div className="bg-gray-50 p-2 rounded-lg">
+                            <div className="text-xs text-gray-400">Konečný stav tach.</div>
+                            <div className="font-medium text-gray-700">{report.endKm.toLocaleString('cs-CZ')} km</div>
+                          </div>
+                        )}
+                        {report && report.actualKm > 0 && (
+                          <div className="bg-gray-50 p-2 rounded-lg">
+                            <div className="text-xs text-gray-400">Ujeté km</div>
+                            <div className="font-medium text-gray-700">{report.actualKm.toLocaleString('cs-CZ')} km</div>
+                          </div>
+                        )}
+                        {report?.avgConsumption && (
+                          <div className="bg-gray-50 p-2 rounded-lg">
+                            <div className="text-xs text-gray-400">Spotřeba</div>
+                            <div className="font-medium text-gray-700">{report.avgConsumption} l/100km</div>
+                          </div>
+                        )}
+                        {report && (
+                          <div className="bg-gray-50 p-2 rounded-lg">
+                            <div className="text-xs text-gray-400">Kontrola auta</div>
+                            <div className={cn('font-medium', report.carCheck === 'OK' ? 'text-green-600' : 'text-red-600')}>
+                              {report.carCheck}
                             </div>
                           </div>
-                        );
-                      })()}
+                        )}
+                      </div>
+
+                      {report?.carCheckNote && (
+                        <div className="p-2 bg-red-50 border border-red-200 rounded-lg">
+                          <div className="text-xs text-red-600 font-medium">Problém:</div>
+                          <p className="text-sm text-red-700">{report.carCheckNote}</p>
+                        </div>
+                      )}
+
+                      {route.note && (
+                        <p className="text-sm text-gray-500">Poznámka: {route.note}</p>
+                      )}
+
+                      {route.mapUrl && (
+                        <a
+                          href={route.mapUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-block text-sm text-primary-600 hover:underline"
+                        >
+                          Zobrazit mapu
+                        </a>
+                      )}
+
+                      <OrdersSection route={route} />
+
+                      {/* Finanční souhrn */}
+                      {(ordersTotal > 0 || fuelVal > 0 || washVal > 0) && (
+                        <div className="bg-gray-50 rounded-lg p-3 space-y-1.5 text-sm">
+                          <div className="font-semibold text-gray-700 text-xs uppercase tracking-wide">Finanční souhrn</div>
+                          {ordersTotal > 0 && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-500">Objednávky</span>
+                              <span className="font-medium text-gray-700">+ {ordersTotal.toLocaleString('cs-CZ')} Kč</span>
+                            </div>
+                          )}
+                          {fuelVal > 0 && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-500">Nafta</span>
+                              <span className="font-medium text-red-600">- {fuelVal.toLocaleString('cs-CZ')} Kč</span>
+                            </div>
+                          )}
+                          {washVal > 0 && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-500">Myčka</span>
+                              <span className="font-medium text-red-600">- {washVal.toLocaleString('cs-CZ')} Kč</span>
+                            </div>
+                          )}
+                          {payVal > 0 && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-500">Výplata řidiče</span>
+                              <span className="font-medium text-red-600">- {payVal.toLocaleString('cs-CZ')} Kč</span>
+                            </div>
+                          )}
+                          {ordersTotal > 0 && (
+                            <div className={cn(
+                              'flex justify-between pt-1.5 border-t border-gray-200 font-bold',
+                              toHandOver >= 0 ? 'text-green-700' : 'text-red-700'
+                            )}>
+                              <span>K předání</span>
+                              <span>{toHandOver.toLocaleString('cs-CZ')} Kč</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  </div>
+                  )}
                 </div>
               );
             })}
