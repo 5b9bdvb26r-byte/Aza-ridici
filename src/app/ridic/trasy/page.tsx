@@ -551,14 +551,18 @@ export default function DriverRoutesPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        {ordersTotal > 0 && (
+                        {ordersTotal > 0 ? (
                           <span className={cn(
                             'px-2 py-0.5 rounded-lg text-xs font-bold',
                             toHandOver >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                           )}>
                             {toHandOver.toLocaleString('cs-CZ')} Kč
                           </span>
-                        )}
+                        ) : (fuelVal > 0 || washVal > 0) ? (
+                          <span className="px-2 py-0.5 rounded-lg text-xs font-bold bg-gray-100 text-gray-500">
+                            - {(fuelVal + washVal).toLocaleString('cs-CZ')} Kč
+                          </span>
+                        ) : null}
                         <span className="text-gray-300 text-sm">{isExpanded ? '▲' : '▼'}</span>
                       </div>
                     </div>
@@ -633,21 +637,20 @@ export default function DriverRoutesPage() {
                       {(ordersTotal > 0 || fuelVal > 0 || washVal > 0 || payVal > 0) && (
                         <div className="bg-gray-50 rounded-lg p-3 space-y-1.5 text-sm">
                           <div className="font-semibold text-gray-700 text-xs uppercase tracking-wide">Finanční souhrn</div>
-                          {route.orders && route.orders.length > 0 && (
-                            <>
-                              {route.orders.map((order) => (
-                                <div key={order.id} className="flex justify-between">
-                                  <span className="text-gray-500">Obj. {order.orderNumber}</span>
-                                  <span className="font-medium text-gray-700">+ {order.price.toLocaleString('cs-CZ')} Kč</span>
-                                </div>
-                              ))}
-                              {route.orders.length > 1 && (
-                                <div className="flex justify-between text-xs text-gray-400 pt-0.5">
-                                  <span>Objednávky celkem</span>
-                                  <span>{ordersTotal.toLocaleString('cs-CZ')} Kč</span>
-                                </div>
-                              )}
-                            </>
+                          {route.orders && route.orders.length > 0 && route.orders.map((order) => (
+                            <div key={order.id} className="flex justify-between">
+                              <span className="text-gray-500">
+                                Obj. {order.orderNumber}
+                                {order.deliveryTime && <span className="text-gray-400 ml-1">({order.deliveryTime})</span>}
+                              </span>
+                              <span className="font-medium text-gray-700">+ {order.price.toLocaleString('cs-CZ')} Kč</span>
+                            </div>
+                          ))}
+                          {route.orders && route.orders.length > 1 && (
+                            <div className="flex justify-between text-xs text-gray-400 pt-0.5">
+                              <span>Objednávky celkem</span>
+                              <span>{ordersTotal.toLocaleString('cs-CZ')} Kč</span>
+                            </div>
                           )}
                           {fuelVal > 0 && (
                             <div className="flex justify-between">
@@ -667,13 +670,21 @@ export default function DriverRoutesPage() {
                               <span className="font-medium text-red-600">- {payVal.toLocaleString('cs-CZ')} Kč</span>
                             </div>
                           )}
-                          <div className={cn(
-                            'flex justify-between pt-1.5 border-t border-gray-200 font-bold',
-                            toHandOver >= 0 ? 'text-green-700' : 'text-red-700'
-                          )}>
-                            <span>K předání</span>
-                            <span>{toHandOver.toLocaleString('cs-CZ')} Kč</span>
-                          </div>
+                          {ordersTotal > 0 && (
+                            <div className={cn(
+                              'flex justify-between pt-1.5 border-t border-gray-200 font-bold',
+                              toHandOver >= 0 ? 'text-green-700' : 'text-red-700'
+                            )}>
+                              <span>K předání</span>
+                              <span>{toHandOver.toLocaleString('cs-CZ')} Kč</span>
+                            </div>
+                          )}
+                          {ordersTotal === 0 && (fuelVal > 0 || washVal > 0) && (
+                            <div className="flex justify-between pt-1.5 border-t border-gray-200 font-bold text-gray-700">
+                              <span>Náklady celkem</span>
+                              <span>- {(fuelVal + washVal).toLocaleString('cs-CZ')} Kč</span>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
