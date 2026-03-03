@@ -15,7 +15,7 @@ export async function POST(
       return NextResponse.json({ error: 'Neautorizováno' }, { status: 401 });
     }
 
-    if (session.user.role !== 'DISPATCHER' && session.user.role !== 'ADMIN') {
+    if (!['DISPATCHER', 'ADMIN', 'WAREHOUSE'].includes(session.user.role)) {
       return NextResponse.json({ error: 'Nedostatečná oprávnění' }, { status: 403 });
     }
 
@@ -54,14 +54,6 @@ export async function POST(
         updateData.bearingsLastKm = curKm;
         updateData.bearingsKm = curKm + vehicle.bearingsLimitKm;
         updateData.bearingsLastReset = new Date();
-      } else if (type === 'brakeFluid') {
-        updateData.brakeFluidLastKm = curKm;
-        updateData.brakeFluidKm = curKm + vehicle.brakeFluidLimitKm;
-        updateData.brakeFluidLastReset = new Date();
-      } else if (type === 'fridex') {
-        updateData.fridexLastKm = curKm;
-        updateData.fridexKm = curKm + vehicle.fridexLimitKm;
-        updateData.fridexLastReset = new Date();
       }
     } else if (action === 'setTarget' && km && type) {
       // Přímo nastavit cílový stav tachometru + zapamatovat aktuální km jako start
@@ -71,8 +63,6 @@ export async function POST(
       else if (type === 'adblue') { updateData.adblueKm = targetKm; updateData.adblueLastKm = curKm; }
       else if (type === 'brakes') { updateData.brakesKm = targetKm; updateData.brakesLastKm = curKm; }
       else if (type === 'bearings') { updateData.bearingsKm = targetKm; updateData.bearingsLastKm = curKm; }
-      else if (type === 'brakeFluid') { updateData.brakeFluidKm = targetKm; updateData.brakeFluidLastKm = curKm; }
-      else if (type === 'fridex') { updateData.fridexKm = targetKm; updateData.fridexLastKm = curKm; }
     } else if (action === 'setDate' && date) {
       // Nastavit datum
       if (type === 'technical') {
@@ -81,6 +71,10 @@ export async function POST(
         updateData.greenCardDate = new Date(date);
       } else if (type === 'highwayVignette') {
         updateData.highwayVignetteDate = new Date(date);
+      } else if (type === 'brakeFluid') {
+        updateData.brakeFluidDate = new Date(date);
+      } else if (type === 'fridex') {
+        updateData.fridexDate = new Date(date);
       }
     }
 

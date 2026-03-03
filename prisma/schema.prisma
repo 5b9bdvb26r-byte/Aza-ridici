@@ -12,7 +12,7 @@ model User {
   email         String    @unique
   name          String
   password      String
-  role          String    @default("DRIVER") // DRIVER, DISPATCHER, ADMIN
+  role          String    @default("DRIVER") // DRIVER, DISPATCHER, ADMIN, WAREHOUSE
   color         String?   // HEX barva pro zobrazení v kalendáři (např. #3B82F6)
   ratingUp      Int       @default(0)       // počet kladných hodnocení
   ratingDown    Int       @default(0)       // počet záporných hodnocení
@@ -72,21 +72,15 @@ model Vehicle {
   bearingsLimitKm    Int      @default(100000) // interval pro výpočet dalšího cíle (km)
   bearingsLastReset  DateTime @default(now()) // datum poslední výměny
 
-  // Sledování brzdové kapaliny
-  brakeFluidKm           Int      @default(0)     // cílový stav tachometru pro další výměnu
-  brakeFluidLastKm       Int      @default(0)     // stav tachometru při poslední výměně
-  brakeFluidLimitKm      Int      @default(50000) // interval pro výpočet dalšího cíle (km)
-  brakeFluidLastReset    DateTime @default(now())  // datum poslední výměny
+  // Brzdová kapalina - datum expirace
+  brakeFluidDate         DateTime? // datum expirace brzdové kapaliny
 
   // Zelená karta - datum expirace
   greenCardDate          DateTime? // datum expirace zelené karty
   greenCardLimitMonths   Int      @default(12)    // limit v měsících (výchozí 12)
 
-  // Sledování fridexu
-  fridexKm               Int      @default(0)     // cílový stav tachometru pro další výměnu
-  fridexLastKm           Int      @default(0)     // stav tachometru při poslední výměně
-  fridexLimitKm          Int      @default(60000) // interval pro výpočet dalšího cíle (km)
-  fridexLastReset        DateTime @default(now())  // datum poslední výměny
+  // Fridex - datum expirace
+  fridexDate             DateTime? // datum expirace fridexu
 
   // Technická kontrola - datum expirace
   technicalInspectionDate DateTime? // datum příští technické kontroly

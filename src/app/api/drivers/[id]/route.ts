@@ -34,7 +34,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Řidič nenalezen' }, { status: 404 });
     }
 
-    if (existingDriver.role !== 'DRIVER') {
+    if (existingDriver.role !== 'DRIVER' && existingDriver.role !== 'WAREHOUSE') {
       return NextResponse.json({ error: 'Nelze upravit tohoto uživatele' }, { status: 400 });
     }
 
@@ -53,6 +53,7 @@ export async function PUT(
         name: true,
         email: true,
         color: true,
+        role: true,
       },
     });
 
@@ -94,7 +95,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Řidič nenalezen' }, { status: 404 });
     }
 
-    if (existingDriver.role !== 'DRIVER') {
+    if (existingDriver.role !== 'DRIVER' && existingDriver.role !== 'WAREHOUSE') {
       return NextResponse.json({ error: 'Nelze smazat tohoto uživatele' }, { status: 400 });
     }
 

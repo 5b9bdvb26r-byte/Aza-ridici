@@ -17,12 +17,13 @@ export async function GET() {
     }
 
     const drivers = await prisma.user.findMany({
-      where: { role: 'DRIVER' },
+      where: { role: { in: ['DRIVER', 'WAREHOUSE'] } },
       select: {
         id: true,
         name: true,
         email: true,
         color: true,
+        role: true,
         ratingUp: true,
         ratingDown: true,
       },
@@ -59,7 +60,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { name, color, password } = body;
+    const { name, color, password, role } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -75,6 +76,9 @@ export async function POST(request: Request) {
       );
     }
 
+    const validRoles = ['DRIVER', 'WAREHOUSE'];
+    const userRole = role && validRoles.includes(role) ? role : 'DRIVER';
+
     // Generovat unikátní email pro řidiče (interní identifikátor)
     const slug = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-');
     const email = `${slug}-${Date.now()}@ridic.aza.cz`;
@@ -86,7 +90,7 @@ export async function POST(request: Request) {
         name,
         email,
         password: hashedPassword,
-        role: 'DRIVER',
+        role: userRole,
         color: color || null,
       },
       select: {
@@ -94,6 +98,7 @@ export async function POST(request: Request) {
         name: true,
         email: true,
         color: true,
+        role: true,
       },
     });
 

@@ -14,5 +14,6 @@ export default async function Home() {
     redirect('/ridic');
   }
 
+  // DISPATCHER, ADMIN i WAREHOUSE jdou na /dispecer
   redirect('/dispecer');
 }

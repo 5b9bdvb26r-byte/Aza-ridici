@@ -6,9 +6,16 @@ export default withAuth(
     const token = req.nextauth.token;
     const pathname = req.nextUrl.pathname;
 
-    // Dispečerské stránky - pouze DISPATCHER/ADMIN
+    // Dispečerské stránky - DISPATCHER/ADMIN/WAREHOUSE
     if (pathname.startsWith('/dispecer')) {
-      if (token?.role === 'DISPATCHER' || token?.role === 'ADMIN') {
+      if (token?.role === 'DISPATCHER' || token?.role === 'ADMIN' || token?.role === 'WAREHOUSE') {
+        // Skladník má omezený přístup - blokujeme trasy, zaměstnance, statistiky
+        if (token?.role === 'WAREHOUSE') {
+          const blocked = ['/dispecer/trasy', '/dispecer/zamestnanci', '/dispecer/statistiky', '/dispecer/ridici'];
+          if (blocked.some(p => pathname.startsWith(p))) {
+            return NextResponse.redirect(new URL('/dispecer', req.url));
+          }
+        }
         return NextResponse.next();
       }
       return NextResponse.redirect(new URL('/prihlaseni', req.url));

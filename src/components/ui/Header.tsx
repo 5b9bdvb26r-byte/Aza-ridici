@@ -16,6 +16,7 @@ export function Header() {
 
   const isDispatcher =
     session?.user?.role === 'DISPATCHER' || session?.user?.role === 'ADMIN';
+  const isWarehouse = session?.user?.role === 'WAREHOUSE';
 
   // Auto-complete routes on page load (once per session)
   useEffect(() => {
@@ -28,7 +29,7 @@ export function Header() {
 
   // Fetch pending routes count for driver badge
   useEffect(() => {
-    if (isDispatcher || !session?.user?.id) return;
+    if (isDispatcher || isWarehouse || !session?.user?.id) return;
 
     const fetchPendingCount = async () => {
       try {
@@ -47,9 +48,9 @@ export function Header() {
     return () => clearInterval(interval);
   }, [isDispatcher, session?.user?.id]);
 
-  // Fetch NOK report count for dispatcher badge
+  // Fetch NOK report count for dispatcher/warehouse badge
   useEffect(() => {
-    if (!isDispatcher) return;
+    if (!isDispatcher && !isWarehouse) return;
 
     const fetchNokCount = async () => {
       try {
@@ -67,7 +68,7 @@ export function Header() {
     // Refresh every 60 seconds
     const interval = setInterval(fetchNokCount, 60000);
     return () => clearInterval(interval);
-  }, [isDispatcher]);
+  }, [isDispatcher, isWarehouse]);
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -146,7 +147,7 @@ export function Header() {
             <span className="text-sm text-gray-600">
               {session?.user?.name}
               <span className="ml-2 text-xs bg-gray-100 px-2 py-1 rounded">
-                {isDispatcher ? 'Dispečer' : 'Řidič'}
+                {isDispatcher ? 'Dispečer' : isWarehouse ? 'Skladník' : 'Řidič'}
               </span>
             </span>
             <button
@@ -169,8 +170,16 @@ export function Header() {
                 <NavLink href="/dispecer">Přehled řidičů</NavLink>
                 <NavLink href="/dispecer/trasy">Trasy</NavLink>
                 <NavLink href="/dispecer/vozidla">Vozidla</NavLink>
-                <NavLink href="/dispecer/ridici">Řidiči</NavLink>
+                <NavLink href="/dispecer/zamestnanci">Zaměstnanci</NavLink>
                 <NavLink href="/dispecer/statistiky">Statistiky</NavLink>
+                <NavLink href="/dispecer/poznamky">Poznámky</NavLink>
+                <NavLink href="/dispecer/sklad">Sklad</NavLink>
+                <NavLink href="/dispecer/hlaseni" badge={nokCount}>Hlášení</NavLink>
+              </>
+            ) : isWarehouse ? (
+              <>
+                <NavLink href="/dispecer">Přehled řidičů</NavLink>
+                <NavLink href="/dispecer/vozidla">Vozidla</NavLink>
                 <NavLink href="/dispecer/poznamky">Poznámky</NavLink>
                 <NavLink href="/dispecer/sklad">Sklad</NavLink>
                 <NavLink href="/dispecer/hlaseni" badge={nokCount}>Hlášení</NavLink>
@@ -181,6 +190,7 @@ export function Header() {
                 <NavLink href="/ridic/trasy" badge={pendingRoutes}>Moje trasy</NavLink>
                 <NavLink href="/ridic/hlaseni">Hlášení</NavLink>
                 <NavLink href="/ridic/statistiky">Statistiky</NavLink>
+                <NavLink href="/ridic/poznamky">Poznámky</NavLink>
               </>
             )}
           </nav>
@@ -195,8 +205,16 @@ export function Header() {
                   <NavLink href="/dispecer">Přehled řidičů</NavLink>
                   <NavLink href="/dispecer/trasy">Trasy</NavLink>
                   <NavLink href="/dispecer/vozidla">Vozidla</NavLink>
-                  <NavLink href="/dispecer/ridici">Řidiči</NavLink>
+                  <NavLink href="/dispecer/zamestnanci">Zaměstnanci</NavLink>
                   <NavLink href="/dispecer/statistiky">Statistiky</NavLink>
+                  <NavLink href="/dispecer/poznamky">Poznámky</NavLink>
+                  <NavLink href="/dispecer/sklad">Sklad</NavLink>
+                  <NavLink href="/dispecer/hlaseni" badge={nokCount}>Hlášení</NavLink>
+                </>
+              ) : isWarehouse ? (
+                <>
+                  <NavLink href="/dispecer">Přehled řidičů</NavLink>
+                  <NavLink href="/dispecer/vozidla">Vozidla</NavLink>
                   <NavLink href="/dispecer/poznamky">Poznámky</NavLink>
                   <NavLink href="/dispecer/sklad">Sklad</NavLink>
                   <NavLink href="/dispecer/hlaseni" badge={nokCount}>Hlášení</NavLink>
@@ -207,6 +225,7 @@ export function Header() {
                   <NavLink href="/ridic/trasy" badge={pendingRoutes}>Moje trasy</NavLink>
                   <NavLink href="/ridic/hlaseni">Hlášení</NavLink>
                   <NavLink href="/ridic/statistiky">Statistiky</NavLink>
+                  <NavLink href="/ridic/poznamky">Poznámky</NavLink>
                 </>
               )}
             </nav>
@@ -215,7 +234,7 @@ export function Header() {
               <span className="text-sm text-gray-600">
                 {session?.user?.name}
                 <span className="ml-2 text-xs bg-gray-100 px-2 py-1 rounded">
-                  {isDispatcher ? 'Dispečer' : 'Řidič'}
+                  {isDispatcher ? 'Dispečer' : isWarehouse ? 'Skladník' : 'Řidič'}
                 </span>
               </span>
               <button

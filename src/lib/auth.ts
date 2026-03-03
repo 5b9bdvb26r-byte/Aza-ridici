@@ -25,9 +25,9 @@ export const authOptions: NextAuthOptions = {
             where: { email: login },
           });
         } else {
-          // Přihlášení jménem (řidič)
+          // Přihlášení jménem (řidič / skladník)
           user = await prisma.user.findFirst({
-            where: { name: login, role: 'DRIVER' },
+            where: { name: login, role: { in: ['DRIVER', 'WAREHOUSE'] } },
           });
         }
 
