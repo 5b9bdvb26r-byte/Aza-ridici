@@ -16,7 +16,7 @@ export async function GET() {
     }
 
     // Pouze dispečer nebo admin
-    if (session.user.role !== 'DISPATCHER' && session.user.role !== 'ADMIN') {
+    if (session.user.role !== 'DISPATCHER' && session.user.role !== 'ADMIN' && session.user.role !== 'WAREHOUSE') {
       return NextResponse.json({ error: 'Nedostatečná oprávnění' }, { status: 403 });
     }
 
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Neautorizováno' }, { status: 401 });
     }
 
-    if (session.user.role !== 'DISPATCHER' && session.user.role !== 'ADMIN') {
+    if (session.user.role !== 'DISPATCHER' && session.user.role !== 'ADMIN' && session.user.role !== 'WAREHOUSE') {
       return NextResponse.json({ error: 'Nedostatečná oprávnění' }, { status: 403 });
     }
 
