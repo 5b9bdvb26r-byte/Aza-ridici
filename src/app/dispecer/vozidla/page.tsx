@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { format, differenceInDays } from 'date-fns';
+import { format, differenceInCalendarDays } from 'date-fns';
 import { cs } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 
@@ -341,12 +341,12 @@ export default function VehiclesPage() {
     }
     const expirationDate = new Date(date);
     const now = new Date();
-    const daysRemaining = differenceInDays(expirationDate, now);
+    const daysRemaining = differenceInCalendarDays(expirationDate, now);
     // Zpětně vypočítat začátek platnosti
     const startDate = new Date(expirationDate);
     startDate.setMonth(startDate.getMonth() - limitMonths);
-    const totalDays = differenceInDays(expirationDate, startDate);
-    const daysUsed = differenceInDays(now, startDate);
+    const totalDays = differenceInCalendarDays(expirationDate, startDate);
+    const daysUsed = differenceInCalendarDays(now, startDate);
     const percentage = totalDays > 0 ? Math.max(0, Math.min((daysUsed / totalDays) * 100, 100)) : 0;
 
     if (daysRemaining <= 0) {
@@ -375,12 +375,12 @@ export default function VehiclesPage() {
     }
     const inspectionDate = new Date(date);
     const now = new Date();
-    const daysRemaining = differenceInDays(inspectionDate, now);
+    const daysRemaining = differenceInCalendarDays(inspectionDate, now);
     // Zpětně vypočítat začátek platnosti (2 roky před expirací)
     const startDate = new Date(inspectionDate);
     startDate.setFullYear(startDate.getFullYear() - 2);
-    const totalDays = differenceInDays(inspectionDate, startDate);
-    const daysUsed = differenceInDays(now, startDate);
+    const totalDays = differenceInCalendarDays(inspectionDate, startDate);
+    const daysUsed = differenceInCalendarDays(now, startDate);
     const percentage = totalDays > 0 ? Math.max(0, Math.min((daysUsed / totalDays) * 100, 100)) : 0;
 
     if (daysRemaining <= 0) {
