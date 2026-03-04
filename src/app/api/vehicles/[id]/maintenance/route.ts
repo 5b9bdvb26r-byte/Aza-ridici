@@ -71,9 +71,19 @@ export async function POST(
       } else if (type === 'highwayVignette') {
         updateData.highwayVignetteDate = new Date(date);
       } else if (type === 'brakeFluid') {
-        updateData.brakeFluidDate = new Date(date);
+        // datum = poslední výměna → expirace = lastDate + limitMonths
+        const lastDate = new Date(date);
+        const expirationDate = new Date(lastDate);
+        expirationDate.setMonth(expirationDate.getMonth() + vehicle.brakeFluidLimitMonths);
+        updateData.brakeFluidLastDate = lastDate;
+        updateData.brakeFluidDate = expirationDate;
       } else if (type === 'fridex') {
-        updateData.fridexDate = new Date(date);
+        // datum = poslední výměna → expirace = lastDate + limitMonths
+        const lastDate = new Date(date);
+        const expirationDate = new Date(lastDate);
+        expirationDate.setMonth(expirationDate.getMonth() + vehicle.fridexLimitMonths);
+        updateData.fridexLastDate = lastDate;
+        updateData.fridexDate = expirationDate;
       }
     }
 

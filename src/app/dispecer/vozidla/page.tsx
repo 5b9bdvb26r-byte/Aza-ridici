@@ -36,10 +36,12 @@ interface Vehicle {
   bearingsLimitKm: number;
   bearingsLastReset: string;
   brakeFluidDate: string | null;
+  brakeFluidLastDate: string | null;
   brakeFluidLimitMonths: number;
   greenCardDate: string | null;
   greenCardLimitMonths: number;
   fridexDate: string | null;
+  fridexLastDate: string | null;
   fridexLimitMonths: number;
   technicalInspectionDate: string | null;
   highwayVignetteDate: string | null;
@@ -509,6 +511,7 @@ export default function VehiclesPage() {
     status,
     daysRemaining,
     limitMonths,
+    lastDate,
     onClick
   }: {
     label: string;
@@ -518,6 +521,7 @@ export default function VehiclesPage() {
     status: string;
     daysRemaining: number | null;
     limitMonths?: number;
+    lastDate?: string | null;
     onClick?: () => void;
   }) => {
     const needsAttention = status === 'expired';
@@ -571,7 +575,12 @@ export default function VehiclesPage() {
               : `${text} (${daysRemaining} dní)`
           }
         </div>
-        {limitMonths && (
+        {lastDate && (
+          <div className="text-[10px] text-gray-400 text-right">
+            Výměna: {format(new Date(lastDate), 'd.M.yyyy', { locale: cs })}
+          </div>
+        )}
+        {!lastDate && limitMonths && (
           <div className="text-[10px] text-gray-400 text-right">
             po {limitMonths} měs.
           </div>
@@ -897,9 +906,10 @@ export default function VehiclesPage() {
                   status={getBrakeFluidDateStatus(vehicle.brakeFluidDate, vehicle.brakeFluidLimitMonths).status}
                   daysRemaining={getBrakeFluidDateStatus(vehicle.brakeFluidDate, vehicle.brakeFluidLimitMonths).daysRemaining}
                   limitMonths={vehicle.brakeFluidLimitMonths}
+                  lastDate={vehicle.brakeFluidLastDate}
                   onClick={() => {
                     setDateModal({ vehicle, type: 'brakeFluid' });
-                    setDateValue(vehicle.brakeFluidDate ? format(new Date(vehicle.brakeFluidDate), 'yyyy-MM-dd') : '');
+                    setDateValue(vehicle.brakeFluidLastDate ? format(new Date(vehicle.brakeFluidLastDate), 'yyyy-MM-dd') : '');
                   }}
                 />
                 <DateProgressBar
@@ -910,9 +920,10 @@ export default function VehiclesPage() {
                   status={getFridexDateStatus(vehicle.fridexDate, vehicle.fridexLimitMonths).status}
                   daysRemaining={getFridexDateStatus(vehicle.fridexDate, vehicle.fridexLimitMonths).daysRemaining}
                   limitMonths={vehicle.fridexLimitMonths}
+                  lastDate={vehicle.fridexLastDate}
                   onClick={() => {
                     setDateModal({ vehicle, type: 'fridex' });
-                    setDateValue(vehicle.fridexDate ? format(new Date(vehicle.fridexDate), 'yyyy-MM-dd') : '');
+                    setDateValue(vehicle.fridexLastDate ? format(new Date(vehicle.fridexLastDate), 'yyyy-MM-dd') : '');
                   }}
                 />
                 <DateProgressBar
@@ -1004,20 +1015,30 @@ export default function VehiclesPage() {
                       <div className="font-medium">{format(new Date(vehicle.bearingsLastReset), 'd.M.yyyy', { locale: cs })}</div>
                     </div>
                     <div className="bg-gray-50 p-3 rounded-lg">
-                      <div className="text-gray-500">💦 Brzdová kapalina do</div>
+                      <div className="text-gray-500">💦 Brzdová kapalina</div>
                       <div className="font-medium">
-                        {vehicle.brakeFluidDate
-                          ? format(new Date(vehicle.brakeFluidDate), 'd.M.yyyy', { locale: cs })
+                        {vehicle.brakeFluidLastDate
+                          ? `Výměna: ${format(new Date(vehicle.brakeFluidLastDate), 'd.M.yyyy', { locale: cs })}`
                           : 'Nenastaveno'}
                       </div>
+                      {vehicle.brakeFluidDate && (
+                        <div className="text-xs text-gray-400">
+                          Expirace: {format(new Date(vehicle.brakeFluidDate), 'd.M.yyyy', { locale: cs })}
+                        </div>
+                      )}
                     </div>
                     <div className="bg-gray-50 p-3 rounded-lg">
-                      <div className="text-gray-500">❄️ Fridex do</div>
+                      <div className="text-gray-500">❄️ Fridex</div>
                       <div className="font-medium">
-                        {vehicle.fridexDate
-                          ? format(new Date(vehicle.fridexDate), 'd.M.yyyy', { locale: cs })
+                        {vehicle.fridexLastDate
+                          ? `Výměna: ${format(new Date(vehicle.fridexLastDate), 'd.M.yyyy', { locale: cs })}`
                           : 'Nenastaveno'}
                       </div>
+                      {vehicle.fridexDate && (
+                        <div className="text-xs text-gray-400">
+                          Expirace: {format(new Date(vehicle.fridexDate), 'd.M.yyyy', { locale: cs })}
+                        </div>
+                      )}
                     </div>
                     <div className="bg-gray-50 p-3 rounded-lg">
                       <div className="text-gray-500">📋 STK platná do</div>
@@ -1300,10 +1321,15 @@ export default function VehiclesPage() {
               {dateModal.type === 'technical' && 'Nastavit datum technické kontroly'}
               {dateModal.type === 'greenCard' && 'Nastavit datum expirace zelené karty'}
               {dateModal.type === 'highwayVignette' && 'Nastavit datum expirace dálniční známky'}
-              {dateModal.type === 'brakeFluid' && 'Nastavit datum expirace brzdové kapaliny'}
-              {dateModal.type === 'fridex' && 'Nastavit datum expirace fridexu'}
+              {dateModal.type === 'brakeFluid' && 'Datum poslední výměny brzdové kapaliny'}
+              {dateModal.type === 'fridex' && 'Datum poslední výměny fridexu'}
               {' '}- {dateModal.vehicle.name}
             </h3>
+            {(dateModal.type === 'brakeFluid' || dateModal.type === 'fridex') && (
+              <p className="text-sm text-gray-500 mb-2">
+                Zadejte datum poslední výměny. Expirace se automaticky vypočítá ({dateModal.type === 'brakeFluid' ? dateModal.vehicle.brakeFluidLimitMonths : dateModal.vehicle.fridexLimitMonths} měsíců).
+              </p>
+            )}
             <input
               type="date"
               value={dateValue}

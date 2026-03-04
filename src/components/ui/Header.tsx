@@ -178,7 +178,6 @@ export function Header() {
               </>
             ) : isWarehouse ? (
               <>
-                <NavLink href="/dispecer">Přehled řidičů</NavLink>
                 <NavLink href="/dispecer/vozidla">Vozidla</NavLink>
                 <NavLink href="/dispecer/poznamky">Poznámky</NavLink>
                 <NavLink href="/dispecer/sklad">Sklad</NavLink>
@@ -213,7 +212,6 @@ export function Header() {
                 </>
               ) : isWarehouse ? (
                 <>
-                  <NavLink href="/dispecer">Přehled řidičů</NavLink>
                   <NavLink href="/dispecer/vozidla">Vozidla</NavLink>
                   <NavLink href="/dispecer/poznamky">Poznámky</NavLink>
                   <NavLink href="/dispecer/sklad">Sklad</NavLink>
