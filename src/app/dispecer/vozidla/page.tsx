@@ -36,9 +36,11 @@ interface Vehicle {
   bearingsLimitKm: number;
   bearingsLastReset: string;
   brakeFluidDate: string | null;
+  brakeFluidLimitMonths: number;
   greenCardDate: string | null;
   greenCardLimitMonths: number;
   fridexDate: string | null;
+  fridexLimitMonths: number;
   technicalInspectionDate: string | null;
   highwayVignetteDate: string | null;
 }
@@ -57,6 +59,8 @@ export default function VehiclesPage() {
     brakesLimitKm: '60000',
     bearingsLimitKm: '100000',
     greenCardLimitMonths: '12',
+    brakeFluidLimitMonths: '22',
+    fridexLimitMonths: '58',
   });
   const [isSaving, setIsSaving] = useState(false);
   const [editKmModal, setEditKmModal] = useState<Vehicle | null>(null);
@@ -157,6 +161,8 @@ export default function VehiclesPage() {
       brakesLimitKm: vehicle.brakesLimitKm.toString(),
       bearingsLimitKm: vehicle.bearingsLimitKm.toString(),
       greenCardLimitMonths: vehicle.greenCardLimitMonths.toString(),
+      brakeFluidLimitMonths: vehicle.brakeFluidLimitMonths.toString(),
+      fridexLimitMonths: vehicle.fridexLimitMonths.toString(),
     });
     setShowForm(true);
   };
@@ -188,6 +194,8 @@ export default function VehiclesPage() {
       brakesLimitKm: '60000',
       bearingsLimitKm: '100000',
       greenCardLimitMonths: '12',
+      brakeFluidLimitMonths: '22',
+      fridexLimitMonths: '58',
     });
   };
 
@@ -359,13 +367,13 @@ export default function VehiclesPage() {
   };
 
   // Kontrola brzdové kapaliny - datum expirace
-  const getBrakeFluidDateStatus = (date: string | null) => {
-    return getGreenCardStatus(date, 24);
+  const getBrakeFluidDateStatus = (date: string | null, limitMonths: number) => {
+    return getGreenCardStatus(date, limitMonths);
   };
 
   // Kontrola fridexu - datum expirace
-  const getFridexDateStatus = (date: string | null) => {
-    return getGreenCardStatus(date, 24);
+  const getFridexDateStatus = (date: string | null, limitMonths: number) => {
+    return getGreenCardStatus(date, limitMonths);
   };
 
   // Kontrola technické - s progress barem (platnost 2 roky = 24 měsíců)
@@ -407,8 +415,8 @@ export default function VehiclesPage() {
       (v.adblueKm > 0 && v.currentKm >= v.adblueKm) ||
       (v.brakesKm > 0 && v.currentKm >= v.brakesKm) ||
       (v.bearingsKm > 0 && v.currentKm >= v.bearingsKm) ||
-      getBrakeFluidDateStatus(v.brakeFluidDate).status === 'expired' ||
-      getFridexDateStatus(v.fridexDate).status === 'expired' ||
+      getBrakeFluidDateStatus(v.brakeFluidDate, v.brakeFluidLimitMonths).status === 'expired' ||
+      getFridexDateStatus(v.fridexDate, v.fridexLimitMonths).status === 'expired' ||
       greenCardStatus.status === 'expired' ||
       technicalStatus.status === 'expired' ||
       vignetteStatus.status === 'expired'
@@ -714,6 +722,34 @@ export default function VehiclesPage() {
                   min="1"
                 />
               </div>
+              <div>
+                <label htmlFor="brakeFluidLimitMonths" className="label">
+                  Brzd. kapalina (měsíce)
+                </label>
+                <input
+                  id="brakeFluidLimitMonths"
+                  type="number"
+                  value={formData.brakeFluidLimitMonths}
+                  onChange={(e) => setFormData({ ...formData, brakeFluidLimitMonths: e.target.value })}
+                  className="input"
+                  placeholder="22"
+                  min="1"
+                />
+              </div>
+              <div>
+                <label htmlFor="fridexLimitMonths" className="label">
+                  Fridex (měsíce)
+                </label>
+                <input
+                  id="fridexLimitMonths"
+                  type="number"
+                  value={formData.fridexLimitMonths}
+                  onChange={(e) => setFormData({ ...formData, fridexLimitMonths: e.target.value })}
+                  className="input"
+                  placeholder="58"
+                  min="1"
+                />
+              </div>
             </div>
             <div className="flex space-x-3">
               <button
@@ -743,8 +779,8 @@ export default function VehiclesPage() {
             (vehicle.adblueKm > 0 && vehicle.currentKm >= vehicle.adblueKm) ||
             (vehicle.brakesKm > 0 && vehicle.currentKm >= vehicle.brakesKm) ||
             (vehicle.bearingsKm > 0 && vehicle.currentKm >= vehicle.bearingsKm) ||
-            getBrakeFluidDateStatus(vehicle.brakeFluidDate).status === 'expired' ||
-            getFridexDateStatus(vehicle.fridexDate).status === 'expired' ||
+            getBrakeFluidDateStatus(vehicle.brakeFluidDate, vehicle.brakeFluidLimitMonths).status === 'expired' ||
+            getFridexDateStatus(vehicle.fridexDate, vehicle.fridexLimitMonths).status === 'expired' ||
             greenCardStatus.status === 'expired' ||
             technicalStatus.status === 'expired' ||
             vignetteStatus.status === 'expired';
@@ -856,10 +892,11 @@ export default function VehiclesPage() {
                 <DateProgressBar
                   label="Brzd. kap."
                   icon="💦"
-                  percentage={getBrakeFluidDateStatus(vehicle.brakeFluidDate).percentage}
-                  text={getBrakeFluidDateStatus(vehicle.brakeFluidDate).text}
-                  status={getBrakeFluidDateStatus(vehicle.brakeFluidDate).status}
-                  daysRemaining={getBrakeFluidDateStatus(vehicle.brakeFluidDate).daysRemaining}
+                  percentage={getBrakeFluidDateStatus(vehicle.brakeFluidDate, vehicle.brakeFluidLimitMonths).percentage}
+                  text={getBrakeFluidDateStatus(vehicle.brakeFluidDate, vehicle.brakeFluidLimitMonths).text}
+                  status={getBrakeFluidDateStatus(vehicle.brakeFluidDate, vehicle.brakeFluidLimitMonths).status}
+                  daysRemaining={getBrakeFluidDateStatus(vehicle.brakeFluidDate, vehicle.brakeFluidLimitMonths).daysRemaining}
+                  limitMonths={vehicle.brakeFluidLimitMonths}
                   onClick={() => {
                     setDateModal({ vehicle, type: 'brakeFluid' });
                     setDateValue(vehicle.brakeFluidDate ? format(new Date(vehicle.brakeFluidDate), 'yyyy-MM-dd') : '');
@@ -868,10 +905,11 @@ export default function VehiclesPage() {
                 <DateProgressBar
                   label="Fridex"
                   icon="❄️"
-                  percentage={getFridexDateStatus(vehicle.fridexDate).percentage}
-                  text={getFridexDateStatus(vehicle.fridexDate).text}
-                  status={getFridexDateStatus(vehicle.fridexDate).status}
-                  daysRemaining={getFridexDateStatus(vehicle.fridexDate).daysRemaining}
+                  percentage={getFridexDateStatus(vehicle.fridexDate, vehicle.fridexLimitMonths).percentage}
+                  text={getFridexDateStatus(vehicle.fridexDate, vehicle.fridexLimitMonths).text}
+                  status={getFridexDateStatus(vehicle.fridexDate, vehicle.fridexLimitMonths).status}
+                  daysRemaining={getFridexDateStatus(vehicle.fridexDate, vehicle.fridexLimitMonths).daysRemaining}
+                  limitMonths={vehicle.fridexLimitMonths}
                   onClick={() => {
                     setDateModal({ vehicle, type: 'fridex' });
                     setDateValue(vehicle.fridexDate ? format(new Date(vehicle.fridexDate), 'yyyy-MM-dd') : '');

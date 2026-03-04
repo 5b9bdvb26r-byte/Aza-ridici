@@ -74,6 +74,7 @@ model Vehicle {
 
   // Brzdová kapalina - datum expirace
   brakeFluidDate         DateTime? // datum expirace brzdové kapaliny
+  brakeFluidLimitMonths  Int      @default(22)    // limit v měsících (výchozí 22)
 
   // Zelená karta - datum expirace
   greenCardDate          DateTime? // datum expirace zelené karty
@@ -81,6 +82,7 @@ model Vehicle {
 
   // Fridex - datum expirace
   fridexDate             DateTime? // datum expirace fridexu
+  fridexLimitMonths      Int      @default(58)    // limit v měsících (výchozí 58)
 
   // Technická kontrola - datum expirace
   technicalInspectionDate DateTime? // datum příští technické kontroly

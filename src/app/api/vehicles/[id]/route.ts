@@ -20,7 +20,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { spz, name, currentKm, oilLimitKm, adblueLimitKm, brakesLimitKm, bearingsLimitKm, greenCardLimitMonths } = body;
+    const { spz, name, currentKm, oilLimitKm, adblueLimitKm, brakesLimitKm, bearingsLimitKm, greenCardLimitMonths, brakeFluidLimitMonths, fridexLimitMonths } = body;
 
     const updateData: {
       spz?: string;
@@ -31,6 +31,8 @@ export async function PUT(
       brakesLimitKm?: number;
       bearingsLimitKm?: number;
       greenCardLimitMonths?: number;
+      brakeFluidLimitMonths?: number;
+      fridexLimitMonths?: number;
     } = {};
 
     if (spz !== undefined) updateData.spz = spz;
@@ -41,6 +43,8 @@ export async function PUT(
     if (brakesLimitKm !== undefined) updateData.brakesLimitKm = parseInt(brakesLimitKm);
     if (bearingsLimitKm !== undefined) updateData.bearingsLimitKm = parseInt(bearingsLimitKm);
     if (greenCardLimitMonths !== undefined) updateData.greenCardLimitMonths = parseInt(greenCardLimitMonths);
+    if (brakeFluidLimitMonths !== undefined) updateData.brakeFluidLimitMonths = parseInt(brakeFluidLimitMonths);
+    if (fridexLimitMonths !== undefined) updateData.fridexLimitMonths = parseInt(fridexLimitMonths);
 
     const vehicle = await prisma.vehicle.update({
       where: { id: params.id },
