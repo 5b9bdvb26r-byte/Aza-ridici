@@ -455,7 +455,9 @@ export default function VehiclesPage() {
     const elapsed = currentKm - startKm;
     const percentage = intervalKm > 0 ? Math.min(Math.max((elapsed / intervalKm) * 100, 0), 100) : 0;
     const needsAttention = remaining <= 0;
-    const nearLimit = remaining > 0 && remaining <= 2000;
+    // "Brzy" = zbývá méně než 20% intervalu (min. 500 km), aby to fungovalo i pro krátké intervaly jako AdBlue
+    const nearThreshold = Math.max(intervalKm * 0.2, 500);
+    const nearLimit = remaining > 0 && remaining <= nearThreshold;
 
     return (
       <div className={cn(
