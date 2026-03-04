@@ -850,7 +850,7 @@ export default function VehiclesPage() {
                   icon="🛢️"
                   onEdit={() => {
                     setEditTargetModal({ vehicle, type: 'oil', label: 'Olej' });
-                    setEditTargetValue(vehicle.oilKm.toString());
+                    setEditTargetValue(vehicle.oilLastKm.toString());
                   }}
                 />
                 <TachoProgressBar
@@ -862,7 +862,7 @@ export default function VehiclesPage() {
                   icon="💧"
                   onEdit={() => {
                     setEditTargetModal({ vehicle, type: 'adblue', label: 'AdBlue' });
-                    setEditTargetValue(vehicle.adblueKm.toString());
+                    setEditTargetValue(vehicle.adblueLastKm.toString());
                   }}
                 />
                 <TachoProgressBar
@@ -874,7 +874,7 @@ export default function VehiclesPage() {
                   icon="🛑"
                   onEdit={() => {
                     setEditTargetModal({ vehicle, type: 'brakes', label: 'Brzdy' });
-                    setEditTargetValue(vehicle.brakesKm.toString());
+                    setEditTargetValue(vehicle.brakesLastKm.toString());
                   }}
                 />
                 <TachoProgressBar
@@ -886,7 +886,7 @@ export default function VehiclesPage() {
                   icon="⚙️"
                   onEdit={() => {
                     setEditTargetModal({ vehicle, type: 'bearings', label: 'Ložiska' });
-                    setEditTargetValue(vehicle.bearingsKm.toString());
+                    setEditTargetValue(vehicle.bearingsLastKm.toString());
                   }}
                 />
                 <DateProgressBar
@@ -1100,10 +1100,10 @@ export default function VehiclesPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              {editTargetModal.label} – cílový stav tachometru – {editTargetModal.vehicle.name}
+              {editTargetModal.label} – poslední výměna – {editTargetModal.vehicle.name}
             </h3>
             <p className="text-sm text-gray-500 mb-4">
-              Zadejte konečný stav tachometru, při kterém je potřeba provést kontrolu/výměnu.
+              Zadejte stav tachometru při poslední výměně. Cíl se automaticky vypočítá (poslední výměna + interval).
               {editTargetModal.vehicle.currentKm > 0 && (
                 <span className="block mt-1 font-medium text-gray-700">
                   Aktuální stav tachometru: {editTargetModal.vehicle.currentKm.toLocaleString('cs-CZ')} km
@@ -1115,7 +1115,7 @@ export default function VehiclesPage() {
               value={editTargetValue}
               onChange={(e) => setEditTargetValue(e.target.value)}
               className="input w-full mb-4"
-              placeholder="Cílový stav tachometru (km)"
+              placeholder="Stav tachometru při poslední výměně (km)"
               min="0"
               autoFocus
             />

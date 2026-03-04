@@ -56,13 +56,12 @@ export async function POST(
         updateData.bearingsLastReset = new Date();
       }
     } else if (action === 'setTarget' && km && type) {
-      // Přímo nastavit cílový stav tachometru + zapamatovat aktuální km jako start
-      const targetKm = parseInt(km);
-      const curKm = vehicle.currentKm || 0;
-      if (type === 'oil') { updateData.oilKm = targetKm; updateData.oilLastKm = curKm; }
-      else if (type === 'adblue') { updateData.adblueKm = targetKm; updateData.adblueLastKm = curKm; }
-      else if (type === 'brakes') { updateData.brakesKm = targetKm; updateData.brakesLastKm = curKm; }
-      else if (type === 'bearings') { updateData.bearingsKm = targetKm; updateData.bearingsLastKm = curKm; }
+      // Nastavit km poslední výměny → cíl = lastKm + interval
+      const lastKm = parseInt(km);
+      if (type === 'oil') { updateData.oilLastKm = lastKm; updateData.oilKm = lastKm + vehicle.oilLimitKm; updateData.oilLastReset = new Date(); }
+      else if (type === 'adblue') { updateData.adblueLastKm = lastKm; updateData.adblueKm = lastKm + vehicle.adblueLimitKm; updateData.adblueLastReset = new Date(); }
+      else if (type === 'brakes') { updateData.brakesLastKm = lastKm; updateData.brakesKm = lastKm + vehicle.brakesLimitKm; updateData.brakesLastReset = new Date(); }
+      else if (type === 'bearings') { updateData.bearingsLastKm = lastKm; updateData.bearingsKm = lastKm + vehicle.bearingsLimitKm; updateData.bearingsLastReset = new Date(); }
     } else if (action === 'setDate' && date) {
       // Nastavit datum
       if (type === 'technical') {
