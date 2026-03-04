@@ -53,6 +53,7 @@ interface DailyReport {
 export default function DriverRoutesPage() {
   const [routes, setRoutes] = useState<Route[]>([]);
   const [reports, setReports] = useState<DailyReport[]>([]);
+  const [allVehicles, setAllVehicles] = useState<Vehicle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
   const [expandedCompleted, setExpandedCompleted] = useState<string | null>(null);
@@ -60,6 +61,7 @@ export default function DriverRoutesPage() {
   // Denní formulář
   const [activeReport, setActiveReport] = useState<string | null>(null);
   const [reportForm, setReportForm] = useState({
+    vehicleId: '',
     endKm: '',
     fuelCost: '',
     carWashCost: '',
@@ -72,7 +74,7 @@ export default function DriverRoutesPage() {
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([fetchRoutes(), fetchReports()]).then(() => setIsLoading(false));
+    Promise.all([fetchRoutes(), fetchReports(), fetchVehicles()]).then(() => setIsLoading(false));
   }, []);
 
   const fetchRoutes = async () => {
@@ -99,6 +101,18 @@ export default function DriverRoutesPage() {
     }
   };
 
+  const fetchVehicles = async () => {
+    try {
+      const response = await fetch('/api/vehicles');
+      if (response.ok) {
+        const data = await response.json();
+        setAllVehicles(data);
+      }
+    } catch (error) {
+      console.error('Chyba při načítání vozidel:', error);
+    }
+  };
+
   const hasReport = (routeId: string) => {
     return reports.some((r) => r.routeId === routeId);
   };
@@ -122,6 +136,7 @@ export default function DriverRoutesPage() {
   const handleOpenReport = (route: Route) => {
     setActiveReport(route.id);
     setReportForm({
+      vehicleId: route.vehicle?.id || '',
       endKm: '',
       fuelCost: '',
       carWashCost: '',
@@ -144,6 +159,7 @@ export default function DriverRoutesPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           routeId: activeReport,
+          vehicleId: reportForm.vehicleId,
           endKm: reportForm.endKm,
           fuelCost: reportForm.fuelCost,
           carWashCost: reportForm.carWashCost,
@@ -322,6 +338,23 @@ export default function DriverRoutesPage() {
                     <div className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Vozidlo *
+                        </label>
+                        <select
+                          value={reportForm.vehicleId}
+                          onChange={(e) => setReportForm({ ...reportForm, vehicleId: e.target.value })}
+                          className="input w-full"
+                          required
+                        >
+                          <option value="">-- Vyberte vozidlo --</option>
+                          {allVehicles.map((v) => (
+                            <option key={v.id} value={v.id}>{v.name} ({v.spz})</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
                           Konečný stav tachometru (km)
                         </label>
                         <input
@@ -332,18 +365,22 @@ export default function DriverRoutesPage() {
                           placeholder="Stav tachometru po jízdě"
                           min="0"
                         />
-                        {route.vehicle && (
-                          <div className="mt-1 space-y-0.5">
-                            <p className="text-xs text-gray-500">
-                              Předchozí stav: {route.vehicle.currentKm > 0 ? `${route.vehicle.currentKm.toLocaleString('cs-CZ')} km` : 'nenastaveno'}
-                            </p>
-                            {reportForm.endKm && route.vehicle.currentKm > 0 && (
-                              <p className="text-xs font-medium text-primary-600">
-                                Ujeté km: {Math.max(0, parseInt(reportForm.endKm) - route.vehicle.currentKm).toLocaleString('cs-CZ')} km
+                        {reportForm.vehicleId && (() => {
+                          const selectedVehicle = allVehicles.find(v => v.id === reportForm.vehicleId);
+                          if (!selectedVehicle) return null;
+                          return (
+                            <div className="mt-1 space-y-0.5">
+                              <p className="text-xs text-gray-500">
+                                Předchozí stav: {selectedVehicle.currentKm > 0 ? `${selectedVehicle.currentKm.toLocaleString('cs-CZ')} km` : 'nenastaveno'}
                               </p>
-                            )}
-                          </div>
-                        )}
+                              {reportForm.endKm && selectedVehicle.currentKm > 0 && (
+                                <p className="text-xs font-medium text-primary-600">
+                                  Ujeté km: {Math.max(0, parseInt(reportForm.endKm) - selectedVehicle.currentKm).toLocaleString('cs-CZ')} km
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
 
                       <div>
@@ -446,7 +483,7 @@ export default function DriverRoutesPage() {
                         </button>
                         <button
                           onClick={handleSubmitReport}
-                          disabled={isSaving || !reportForm.endKm}
+                          disabled={isSaving || !reportForm.endKm || !reportForm.vehicleId}
                           className="btn-primary flex-1"
                         >
                           {isSaving ? 'Odesílám...' : 'Odeslat report'}

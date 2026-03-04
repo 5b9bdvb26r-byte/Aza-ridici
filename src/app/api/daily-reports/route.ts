@@ -45,11 +45,11 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { routeId, endKm, fuelCost, carWashCost, avgConsumption, carCheck, carCheckNote } = body;
+    const { routeId, vehicleId, endKm, fuelCost, carWashCost, avgConsumption, carCheck, carCheckNote } = body;
 
-    if (!routeId || !endKm) {
+    if (!routeId || !endKm || !vehicleId) {
       return NextResponse.json(
-        { error: 'ID trasy a konečný stav km jsou povinné' },
+        { error: 'ID trasy, vozidlo a konečný stav km jsou povinné' },
         { status: 400 }
       );
     }
@@ -80,8 +80,12 @@ export async function POST(request: Request) {
 
     const endKmValue = parseInt(endKm);
 
-    // Automaticky vypočítat ujeté km z rozdílu tachometrů
-    const previousKm = route.vehicle?.currentKm || 0;
+    // Načíst vybrané vozidlo pro výpočet ujetých km
+    const vehicle = await prisma.vehicle.findUnique({
+      where: { id: vehicleId },
+    });
+
+    const previousKm = vehicle?.currentKm || 0;
     const kmValue = Math.max(0, endKmValue - previousKm);
 
     // Vytvořit report a aktualizovat trasu v transakci
@@ -105,10 +109,11 @@ export async function POST(request: Request) {
         },
       });
 
-      // Aktualizovat skutečné km na trase, naftu a nastavit jako dokončenou
+      // Aktualizovat trasu - přiřadit vozidlo, skutečné km, naftu, dokončit
       await tx.route.update({
         where: { id: routeId },
         data: {
+          vehicleId: vehicleId,
           actualKm: kmValue,
           fuelCost: fuelCostValue,
           status: 'COMPLETED',
@@ -116,14 +121,12 @@ export async function POST(request: Request) {
       });
 
       // Aktualizovat stav tachometru vozidla
-      if (route.vehicleId) {
-        await tx.vehicle.update({
-          where: { id: route.vehicleId },
-          data: {
-            currentKm: endKmValue,
-          },
-        });
-      }
+      await tx.vehicle.update({
+        where: { id: vehicleId },
+        data: {
+          currentKm: endKmValue,
+        },
+      });
 
       return report;
     });

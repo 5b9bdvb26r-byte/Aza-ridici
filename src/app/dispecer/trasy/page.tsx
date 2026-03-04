@@ -32,6 +32,7 @@ interface DailyReport {
   actualKm: number;
   endKm: number | null;
   fuelCost: number;
+  carWashCost: number;
   carCheck: string;
   carCheckNote: string | null;
   createdAt: string;
@@ -96,7 +97,6 @@ export default function RoutesPage() {
     actualKm: '',
     date: '',
     driverId: '',
-    vehicleId: '',
     note: '',
     status: 'PLANNED',
     complaintCount: '0',
@@ -308,7 +308,6 @@ export default function RoutesPage() {
       actualKm: route.actualKm?.toString() || '',
       date: route.date.split('T')[0],
       driverId: route.driver?.id || '',
-      vehicleId: route.vehicle?.id || '',
       note: route.note || '',
       status: route.status,
       complaintCount: route.complaintCount?.toString() || '0',
@@ -341,7 +340,7 @@ export default function RoutesPage() {
     setEditingRoute(null);
     setFormData({
       name: '', mapUrl: '', plannedKm: '', actualKm: '', date: '', driverId: '',
-      vehicleId: '', note: '', status: 'PLANNED', complaintCount: '0', driverPay: '2500',
+      note: '', status: 'PLANNED', complaintCount: '0', driverPay: '2500',
     });
     setOrders([emptyOrder()]);
   };
@@ -608,14 +607,7 @@ export default function RoutesPage() {
                 )}
               </div>
 
-              <div>
-                <label htmlFor="vehicleId" className="label">Vozidlo</label>
-                <select id="vehicleId" value={formData.vehicleId}
-                  onChange={(e) => setFormData({ ...formData, vehicleId: e.target.value })} className="input">
-                  <option value="">-- Vyberte vozidlo --</option>
-                  {vehicles.map((v) => <option key={v.id} value={v.id}>{v.name} ({v.spz})</option>)}
-                </select>
-              </div>
+              {/* Vozidlo vybírá řidič v reportu */}
               <div>
                 <label htmlFor="plannedKm" className="label">Plánované km</label>
                 <input id="plannedKm" type="number" value={formData.plannedKm}
@@ -1293,7 +1285,8 @@ function RouteCard({
 }) {
   const ordersTotal = route.orders?.reduce((sum, o) => sum + (parseFloat(o.price?.toString()) || 0), 0) || 0;
   const reportFuel = route.dailyReport?.fuelCost || 0;
-  const totalCosts = (route.driverPay || 0) + (reportFuel > 0 ? reportFuel : (route.fuelCost || 0));
+  const reportWash = route.dailyReport?.carWashCost || 0;
+  const totalCosts = (route.driverPay || 0) + (reportFuel > 0 ? reportFuel : (route.fuelCost || 0)) + reportWash;
   const netProfit = ordersTotal - totalCosts;
   const hasOrders = route.orders && route.orders.length > 0;
   const report = route.dailyReport;
@@ -1380,6 +1373,11 @@ function RouteCard({
               {reportFuel > 0 && (
                 <span className="px-2 py-0.5 bg-orange-50 text-orange-600 rounded">
                   Nafta: -{reportFuel.toLocaleString('cs-CZ')} Kč
+                </span>
+              )}
+              {reportWash > 0 && (
+                <span className="px-2 py-0.5 bg-cyan-50 text-cyan-600 rounded">
+                  Myčka: -{reportWash.toLocaleString('cs-CZ')} Kč
                 </span>
               )}
               <span className={cn('px-2 py-0.5 rounded font-bold',
@@ -1478,7 +1476,7 @@ function RouteCard({
           )}
 
           {/* Finanční souhrn v detailu */}
-          {(ordersTotal > 0 || route.driverPay > 0 || reportFuel > 0) && (
+          {(ordersTotal > 0 || route.driverPay > 0 || reportFuel > 0 || reportWash > 0) && (
             <div className="bg-gray-50 rounded-lg p-3 text-sm space-y-1.5">
               <div className="text-xs font-medium text-gray-500 uppercase mb-2">Finanční souhrn</div>
               <div className="flex justify-between">
@@ -1497,8 +1495,14 @@ function RouteCard({
                   <span className="font-medium text-red-600">-{reportFuel.toLocaleString('cs-CZ')} Kč</span>
                 </div>
               )}
+              {reportWash > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Myčka:</span>
+                  <span className="font-medium text-red-600">-{reportWash.toLocaleString('cs-CZ')} Kč</span>
+                </div>
+              )}
               <div className="flex justify-between pt-1.5 border-t border-gray-300 font-bold">
-                <span>Zisk:</span>
+                <span>K předání:</span>
                 <span className={netProfit >= 0 ? 'text-green-700' : 'text-red-700'}>
                   {netProfit.toLocaleString('cs-CZ')} Kč
                 </span>
