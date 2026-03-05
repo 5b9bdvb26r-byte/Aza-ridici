@@ -662,7 +662,7 @@ export default function RoutesPage() {
                     {orders.map((order, i) => (
                       <tr key={i} className="border-b border-gray-100">
                         <td className="py-1.5 px-2"><input type="text" value={order.orderNumber} onChange={(e) => updateOrder(i, 'orderNumber', e.target.value)} className="input text-sm py-1.5" placeholder="OBJ-001" /></td>
-                        <td className="py-1.5 px-2"><input type="number" value={order.price} onChange={(e) => updateOrder(i, 'price', e.target.value)} className="input text-sm py-1.5" placeholder="0" min="0" step="0.01" /></td>
+                        <td className="py-1.5 px-2"><input type="number" value={order.price} onChange={(e) => updateOrder(i, 'price', e.target.value)} className="input text-sm py-1.5" placeholder="0" step="0.01" /></td>
                         <td className="py-1.5 px-2">
                           <div className="flex items-center gap-1">
                             <select value={order.deliveryTime} onChange={(e) => {
@@ -728,7 +728,7 @@ export default function RoutesPage() {
                     </button>
                     <div className="grid grid-cols-2 gap-2">
                       <div><label className="text-xs text-gray-500">Číslo obj.</label><input type="text" value={order.orderNumber} onChange={(e) => updateOrder(i, 'orderNumber', e.target.value)} className="input text-sm py-1.5" placeholder="OBJ-001" /></div>
-                      <div><label className="text-xs text-gray-500">Cena (Kč)</label><input type="number" value={order.price} onChange={(e) => updateOrder(i, 'price', e.target.value)} className="input text-sm py-1.5" placeholder="0" min="0" step="0.01" /></div>
+                      <div><label className="text-xs text-gray-500">Cena (Kč)</label><input type="number" value={order.price} onChange={(e) => updateOrder(i, 'price', e.target.value)} className="input text-sm py-1.5" placeholder="0" step="0.01" /></div>
                       <div className="col-span-2">
                         <label className="text-xs text-gray-500">Čas doručení</label>
                         <div className="flex items-center gap-1">
@@ -1358,7 +1358,7 @@ function RouteCard({
           </div>
 
           {/* Finanční řádek */}
-          {(ordersTotal > 0 || route.driverPay > 0) && (
+          {(ordersTotal !== 0 || route.driverPay > 0) && (
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs mt-2">
               {hasOrders && (
                 <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded font-medium">
@@ -1476,7 +1476,7 @@ function RouteCard({
           )}
 
           {/* Finanční souhrn v detailu */}
-          {(ordersTotal > 0 || route.driverPay > 0 || reportFuel > 0 || reportWash > 0) && (
+          {(ordersTotal !== 0 || route.driverPay > 0 || reportFuel > 0 || reportWash > 0) && (
             <div className="bg-gray-50 rounded-lg p-3 text-sm space-y-1.5">
               <div className="text-xs font-medium text-gray-500 uppercase mb-2">Finanční souhrn</div>
               <div className="flex justify-between">
@@ -1524,7 +1524,7 @@ function RouteCard({
                       {order.deliveryTime && <span className="text-xs text-gray-400">{order.deliveryTime}{order.deliveryTimeTo ? ` - ${order.deliveryTimeTo}` : ''}</span>}
                       {order.note && <span className="text-xs text-gray-400">{order.note}</span>}
                     </div>
-                    <span className="font-medium text-gray-900">
+                    <span className={cn('font-medium', parseFloat(order.price?.toString() || '0') < 0 ? 'text-red-600' : 'text-gray-900')}>
                       {parseFloat(order.price?.toString() || '0').toLocaleString('cs-CZ')} Kč
                     </span>
                   </div>
