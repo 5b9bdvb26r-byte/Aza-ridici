@@ -13,6 +13,7 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [nokCount, setNokCount] = useState(0);
   const [pendingRoutes, setPendingRoutes] = useState(0);
+  const [notesCount, setNotesCount] = useState(0);
 
   const isDispatcher =
     session?.user?.role === 'DISPATCHER' || session?.user?.role === 'ADMIN';
@@ -67,6 +68,27 @@ export function Header() {
     fetchNokCount();
     // Refresh every 60 seconds
     const interval = setInterval(fetchNokCount, 60000);
+    return () => clearInterval(interval);
+  }, [isDispatcher, isWarehouse]);
+
+  // Fetch unresolved notes count for dispatcher/warehouse badge
+  useEffect(() => {
+    if (!isDispatcher && !isWarehouse) return;
+
+    const fetchNotesCount = async () => {
+      try {
+        const response = await fetch('/api/notes/unresolved-count');
+        if (response.ok) {
+          const data = await response.json();
+          setNotesCount(data.count);
+        }
+      } catch {
+        // silently fail
+      }
+    };
+
+    fetchNotesCount();
+    const interval = setInterval(fetchNotesCount, 60000);
     return () => clearInterval(interval);
   }, [isDispatcher, isWarehouse]);
 
@@ -172,14 +194,14 @@ export function Header() {
                 <NavLink href="/dispecer/vozidla">Vozidla</NavLink>
                 <NavLink href="/dispecer/zamestnanci">Zaměstnanci</NavLink>
                 <NavLink href="/dispecer/statistiky">Statistiky</NavLink>
-                <NavLink href="/dispecer/poznamky">Poznámky</NavLink>
+                <NavLink href="/dispecer/poznamky" badge={notesCount}>Poznámky</NavLink>
                 <NavLink href="/dispecer/sklad">Sklad</NavLink>
                 <NavLink href="/dispecer/hlaseni" badge={nokCount}>Hlášení</NavLink>
               </>
             ) : isWarehouse ? (
               <>
                 <NavLink href="/dispecer/vozidla">Vozidla</NavLink>
-                <NavLink href="/dispecer/poznamky">Poznámky</NavLink>
+                <NavLink href="/dispecer/poznamky" badge={notesCount}>Poznámky</NavLink>
                 <NavLink href="/dispecer/sklad">Sklad</NavLink>
                 <NavLink href="/dispecer/hlaseni" badge={nokCount}>Hlášení</NavLink>
               </>
@@ -206,14 +228,14 @@ export function Header() {
                   <NavLink href="/dispecer/vozidla">Vozidla</NavLink>
                   <NavLink href="/dispecer/zamestnanci">Zaměstnanci</NavLink>
                   <NavLink href="/dispecer/statistiky">Statistiky</NavLink>
-                  <NavLink href="/dispecer/poznamky">Poznámky</NavLink>
+                  <NavLink href="/dispecer/poznamky" badge={notesCount}>Poznámky</NavLink>
                   <NavLink href="/dispecer/sklad">Sklad</NavLink>
                   <NavLink href="/dispecer/hlaseni" badge={nokCount}>Hlášení</NavLink>
                 </>
               ) : isWarehouse ? (
                 <>
                   <NavLink href="/dispecer/vozidla">Vozidla</NavLink>
-                  <NavLink href="/dispecer/poznamky">Poznámky</NavLink>
+                  <NavLink href="/dispecer/poznamky" badge={notesCount}>Poznámky</NavLink>
                   <NavLink href="/dispecer/sklad">Sklad</NavLink>
                   <NavLink href="/dispecer/hlaseni" badge={nokCount}>Hlášení</NavLink>
                 </>

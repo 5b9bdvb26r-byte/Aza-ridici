@@ -11,15 +11,22 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     }
 
     const body = await request.json();
-    const { text, categoryId } = body;
+    const { text, categoryId, status } = body;
 
-    if (!text || !text.trim()) {
-      return NextResponse.json({ error: 'Text poznámky je povinný' }, { status: 400 });
+    // Pokud se mění jen status, text nemusí být povinný
+    const data: { text?: string; categoryId?: string; status?: string | null } = {};
+
+    if (text !== undefined) {
+      if (!text || !text.trim()) {
+        return NextResponse.json({ error: 'Text poznámky je povinný' }, { status: 400 });
+      }
+      data.text = text.trim();
     }
-
-    const data: { text: string; categoryId?: string } = { text: text.trim() };
     if (categoryId) {
       data.categoryId = categoryId;
+    }
+    if (status !== undefined) {
+      data.status = status; // null, "seen", "ok", "nok"
     }
 
     const note = await prisma.note.update({

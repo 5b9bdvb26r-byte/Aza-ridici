@@ -188,6 +188,7 @@ model Note {
   id         String       @id @default(cuid())
   text       String
   categoryId String
+  status     String?      // null=nová, "seen"=viděno, "ok"=vyřešeno, "nok"=zamítnuto
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
 

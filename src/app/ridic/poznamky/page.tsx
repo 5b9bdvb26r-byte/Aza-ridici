@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import { cs } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 interface NoteCategory {
   id: string;
@@ -15,10 +16,17 @@ interface Note {
   id: string;
   text: string;
   categoryId: string;
+  status: string | null; // null=nová, "seen"=viděno, "ok"=vyřešeno, "nok"=zamítnuto
   createdAt: string;
   updatedAt: string;
   category: { id: string; name: string };
 }
+
+const STATUS_CONFIG = {
+  seen: { label: 'Viděno', icon: '👁', bg: 'bg-yellow-50', border: 'border-l-yellow-400', text: 'text-yellow-700' },
+  ok: { label: 'OK', icon: '✅', bg: 'bg-green-50', border: 'border-l-green-500', text: 'text-green-700' },
+  nok: { label: 'NOK', icon: '❌', bg: 'bg-red-50', border: 'border-l-red-500', text: 'text-red-700' },
+} as const;
 
 export default function NotesPage() {
   const [categories, setCategories] = useState<NoteCategory[]>([]);
@@ -149,6 +157,17 @@ export default function NotesPage() {
     }
   };
 
+  const handleSetStatus = async (noteId: string, status: string | null) => {
+    const response = await fetch(`/api/notes/${noteId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    if (response.ok && selectedCategoryId) {
+      await fetchNotes(selectedCategoryId);
+    }
+  };
+
   const openEditCategory = (cat: NoteCategory) => {
     setEditingCategory(cat);
     setCategoryName(cat.name);
@@ -174,6 +193,15 @@ export default function NotesPage() {
   };
 
   const selectedCategory = categories.find((c) => c.id === selectedCategoryId);
+
+  // Řazení: nevyřízené (null) nahoře, pak viděno, pak ok/nok
+  const sortedNotes = [...notes].sort((a, b) => {
+    const order = { null: 0, seen: 1, nok: 2, ok: 3 };
+    const aOrder = order[a.status as keyof typeof order] ?? 0;
+    const bOrder = order[b.status as keyof typeof order] ?? 0;
+    if (aOrder !== bOrder) return aOrder - bOrder;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
 
   if (isLoading) {
     return (
@@ -264,36 +292,96 @@ export default function NotesPage() {
                 <p className="text-gray-500 text-sm">V této kategorii nejsou žádné poznámky.</p>
               ) : (
                 <div className="space-y-3">
-                  {notes.map((note) => (
-                    <div
-                      key={note.id}
-                      className="group border border-gray-200 rounded-lg p-3 sm:p-4 hover:border-gray-300 transition-colors"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <p className="text-gray-800 whitespace-pre-wrap flex-1 text-sm sm:text-base">{note.text}</p>
-                        <div className="flex md:hidden md:group-hover:flex items-center gap-1 flex-shrink-0 mt-0.5">
-                          <button
-                            onClick={() => openEditNote(note)}
-                            className="text-gray-400 hover:text-primary-600 text-sm px-1.5 py-0.5"
-                            title="Upravit"
-                          >
-                            ✎
-                          </button>
-                          <button
-                            onClick={() => setShowDeleteConfirm({ type: 'note', id: note.id })}
-                            className="text-gray-400 hover:text-red-600 text-sm px-1.5 py-0.5"
-                            title="Smazat"
-                          >
-                            ✕
-                          </button>
+                  {sortedNotes.map((note) => {
+                    const statusCfg = note.status ? STATUS_CONFIG[note.status as keyof typeof STATUS_CONFIG] : null;
+                    return (
+                      <div
+                        key={note.id}
+                        className={cn(
+                          'group rounded-lg p-3 sm:p-4 transition-colors border-l-4',
+                          statusCfg
+                            ? `${statusCfg.bg} ${statusCfg.border} border border-gray-200`
+                            : 'bg-white border-l-transparent border border-gray-200 hover:border-gray-300'
+                        )}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-gray-800 whitespace-pre-wrap text-sm sm:text-base">{note.text}</p>
+                            <div className="flex items-center gap-2 mt-2">
+                              <span className="text-xs text-gray-400">
+                                {format(new Date(note.createdAt), 'd. MMMM yyyy, HH:mm', { locale: cs })}
+                                {note.updatedAt !== note.createdAt && ' (upraveno)'}
+                              </span>
+                              {statusCfg && (
+                                <span className={cn('text-xs font-medium px-2 py-0.5 rounded-full', statusCfg.text, statusCfg.bg)}>
+                                  {statusCfg.icon} {statusCfg.label}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Status + edit tlačítka */}
+                          <div className="flex items-center gap-0.5 flex-shrink-0 mt-0.5">
+                            {/* Status tlačítka */}
+                            <button
+                              onClick={() => handleSetStatus(note.id, note.status === 'seen' ? null : 'seen')}
+                              className={cn(
+                                'p-1.5 rounded-md text-sm transition-colors',
+                                note.status === 'seen'
+                                  ? 'bg-yellow-200 text-yellow-800'
+                                  : 'text-gray-300 hover:text-yellow-600 hover:bg-yellow-50'
+                              )}
+                              title="Viděno / pracuji na tom"
+                            >
+                              👁
+                            </button>
+                            <button
+                              onClick={() => handleSetStatus(note.id, note.status === 'ok' ? null : 'ok')}
+                              className={cn(
+                                'p-1.5 rounded-md text-sm transition-colors',
+                                note.status === 'ok'
+                                  ? 'bg-green-200 text-green-800'
+                                  : 'text-gray-300 hover:text-green-600 hover:bg-green-50'
+                              )}
+                              title="OK - vyřešeno"
+                            >
+                              ✅
+                            </button>
+                            <button
+                              onClick={() => handleSetStatus(note.id, note.status === 'nok' ? null : 'nok')}
+                              className={cn(
+                                'p-1.5 rounded-md text-sm transition-colors',
+                                note.status === 'nok'
+                                  ? 'bg-red-200 text-red-800'
+                                  : 'text-gray-300 hover:text-red-600 hover:bg-red-50'
+                              )}
+                              title="NOK - zamítnuto"
+                            >
+                              ❌
+                            </button>
+
+                            <div className="w-px h-5 bg-gray-200 mx-1" />
+
+                            {/* Edit/Delete */}
+                            <button
+                              onClick={() => openEditNote(note)}
+                              className="text-gray-400 hover:text-primary-600 text-sm p-1.5"
+                              title="Upravit"
+                            >
+                              ✎
+                            </button>
+                            <button
+                              onClick={() => setShowDeleteConfirm({ type: 'note', id: note.id })}
+                              className="text-gray-400 hover:text-red-600 text-sm p-1.5"
+                              title="Smazat"
+                            >
+                              ✕
+                            </button>
+                          </div>
                         </div>
                       </div>
-                      <p className="text-xs text-gray-400 mt-2">
-                        {format(new Date(note.createdAt), 'd. MMMM yyyy, HH:mm', { locale: cs })}
-                        {note.updatedAt !== note.createdAt && ' (upraveno)'}
-                      </p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
