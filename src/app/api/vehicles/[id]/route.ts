@@ -46,6 +46,27 @@ export async function PUT(
     if (brakeFluidLimitMonths !== undefined) updateData.brakeFluidLimitMonths = parseInt(brakeFluidLimitMonths);
     if (fridexLimitMonths !== undefined) updateData.fridexLimitMonths = parseInt(fridexLimitMonths);
 
+    // Při změně intervalu přepočítat cíl (target = lastKm + newInterval)
+    const existingVehicle = await prisma.vehicle.findUnique({ where: { id: params.id } });
+    if (existingVehicle) {
+      if (oilLimitKm !== undefined) {
+        const newLimit = parseInt(oilLimitKm);
+        (updateData as Record<string, number>).oilKm = existingVehicle.oilLastKm + newLimit;
+      }
+      if (adblueLimitKm !== undefined) {
+        const newLimit = parseInt(adblueLimitKm);
+        (updateData as Record<string, number>).adblueKm = existingVehicle.adblueLastKm + newLimit;
+      }
+      if (brakesLimitKm !== undefined) {
+        const newLimit = parseInt(brakesLimitKm);
+        (updateData as Record<string, number>).brakesKm = existingVehicle.brakesLastKm + newLimit;
+      }
+      if (bearingsLimitKm !== undefined) {
+        const newLimit = parseInt(bearingsLimitKm);
+        (updateData as Record<string, number>).bearingsKm = existingVehicle.bearingsLastKm + newLimit;
+      }
+    }
+
     const vehicle = await prisma.vehicle.update({
       where: { id: params.id },
       data: updateData,

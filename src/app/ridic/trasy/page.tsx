@@ -44,6 +44,7 @@ interface DailyReport {
   actualKm: number;
   endKm: number | null;
   fuelCost: number;
+  adblueCost: number;
   carWashCost: number;
   avgConsumption: number | null;
   carCheck: string;
@@ -64,6 +65,7 @@ export default function DriverRoutesPage() {
     vehicleId: '',
     endKm: '',
     fuelCost: '',
+    adblueCost: '',
     carWashCost: '',
     avgConsumption: '',
     carCheck: 'OK',
@@ -139,6 +141,7 @@ export default function DriverRoutesPage() {
       vehicleId: route.vehicle?.id || '',
       endKm: '',
       fuelCost: '',
+      adblueCost: '',
       carWashCost: '',
       avgConsumption: '',
       carCheck: 'OK',
@@ -162,6 +165,7 @@ export default function DriverRoutesPage() {
           vehicleId: reportForm.vehicleId,
           endKm: reportForm.endKm,
           fuelCost: reportForm.fuelCost,
+          adblueCost: reportForm.adblueCost,
           carWashCost: reportForm.carWashCost,
           avgConsumption: reportForm.avgConsumption,
           carCheck: reportForm.carCheck,
@@ -400,6 +404,21 @@ export default function DriverRoutesPage() {
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
+                          AdBlue (Kč)
+                        </label>
+                        <input
+                          type="number"
+                          value={reportForm.adblueCost}
+                          onChange={(e) => setReportForm({ ...reportForm, adblueCost: e.target.value })}
+                          className="input w-full"
+                          placeholder="Náklady na AdBlue v Kč"
+                          min="0"
+                          step="1"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
                           Myčka (Kč)
                         </label>
                         <input
@@ -559,9 +578,10 @@ export default function DriverRoutesPage() {
               const isExpanded = expandedCompleted === route.id;
               const ordersTotal = route.orders ? route.orders.reduce((sum, o) => sum + (o.price || 0), 0) : 0;
               const fuelVal = report?.fuelCost || 0;
+              const adblueVal = report?.adblueCost || 0;
               const washVal = report?.carWashCost || 0;
               const payVal = route.driverPay || 0;
-              const toHandOver = ordersTotal - payVal - fuelVal - washVal;
+              const toHandOver = ordersTotal - payVal - fuelVal - adblueVal - washVal;
 
               return (
                 <div key={route.id} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -594,9 +614,9 @@ export default function DriverRoutesPage() {
                           )}>
                             {toHandOver.toLocaleString('cs-CZ')} Kč
                           </span>
-                        ) : (fuelVal > 0 || washVal > 0) ? (
+                        ) : (fuelVal > 0 || adblueVal > 0 || washVal > 0) ? (
                           <span className="px-2 py-0.5 rounded-lg text-xs font-bold bg-gray-100 text-gray-500">
-                            - {(fuelVal + washVal).toLocaleString('cs-CZ')} Kč
+                            - {(fuelVal + adblueVal + washVal).toLocaleString('cs-CZ')} Kč
                           </span>
                         ) : null}
                         <span className="text-gray-300 text-sm">{isExpanded ? '▲' : '▼'}</span>
@@ -670,7 +690,7 @@ export default function DriverRoutesPage() {
                       )}
 
                       {/* Finanční souhrn */}
-                      {(ordersTotal > 0 || fuelVal > 0 || washVal > 0 || payVal > 0) && (
+                      {(ordersTotal !== 0 || fuelVal > 0 || adblueVal > 0 || washVal > 0 || payVal > 0) && (
                         <div className="bg-gray-50 rounded-lg p-3 space-y-1.5 text-sm">
                           <div className="font-semibold text-gray-700 text-xs uppercase tracking-wide">Finanční souhrn</div>
                           {route.orders && route.orders.length > 0 && route.orders.map((order) => (
@@ -679,7 +699,9 @@ export default function DriverRoutesPage() {
                                 Obj. {order.orderNumber}
                                 {order.deliveryTime && <span className="text-gray-400 ml-1">({order.deliveryTime})</span>}
                               </span>
-                              <span className="font-medium text-gray-700">+ {order.price.toLocaleString('cs-CZ')} Kč</span>
+                              <span className={cn('font-medium', order.price < 0 ? 'text-red-600' : 'text-gray-700')}>
+                                {order.price >= 0 ? '+ ' : ''}{order.price.toLocaleString('cs-CZ')} Kč
+                              </span>
                             </div>
                           ))}
                           {route.orders && route.orders.length > 1 && (
@@ -700,13 +722,19 @@ export default function DriverRoutesPage() {
                               <span className="font-medium text-red-600">- {fuelVal.toLocaleString('cs-CZ')} Kč</span>
                             </div>
                           )}
+                          {adblueVal > 0 && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-500">AdBlue</span>
+                              <span className="font-medium text-red-600">- {adblueVal.toLocaleString('cs-CZ')} Kč</span>
+                            </div>
+                          )}
                           {washVal > 0 && (
                             <div className="flex justify-between">
                               <span className="text-gray-500">Myčka</span>
                               <span className="font-medium text-red-600">- {washVal.toLocaleString('cs-CZ')} Kč</span>
                             </div>
                           )}
-                          {ordersTotal > 0 && (
+                          {ordersTotal !== 0 && (
                             <div className={cn(
                               'flex justify-between pt-1.5 border-t border-gray-200 font-bold',
                               toHandOver >= 0 ? 'text-green-700' : 'text-red-700'
@@ -715,10 +743,10 @@ export default function DriverRoutesPage() {
                               <span>{toHandOver.toLocaleString('cs-CZ')} Kč</span>
                             </div>
                           )}
-                          {ordersTotal === 0 && (fuelVal > 0 || washVal > 0) && (
+                          {ordersTotal === 0 && (fuelVal > 0 || adblueVal > 0 || washVal > 0) && (
                             <div className="flex justify-between pt-1.5 border-t border-gray-200 font-bold text-gray-700">
                               <span>Náklady celkem</span>
-                              <span>- {(fuelVal + washVal).toLocaleString('cs-CZ')} Kč</span>
+                              <span>- {(fuelVal + adblueVal + washVal).toLocaleString('cs-CZ')} Kč</span>
                             </div>
                           )}
                         </div>

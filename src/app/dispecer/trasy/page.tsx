@@ -32,6 +32,7 @@ interface DailyReport {
   actualKm: number;
   endKm: number | null;
   fuelCost: number;
+  adblueCost: number;
   carWashCost: number;
   carCheck: string;
   carCheckNote: string | null;
@@ -1285,8 +1286,9 @@ function RouteCard({
 }) {
   const ordersTotal = route.orders?.reduce((sum, o) => sum + (parseFloat(o.price?.toString()) || 0), 0) || 0;
   const reportFuel = route.dailyReport?.fuelCost || 0;
+  const reportAdblue = route.dailyReport?.adblueCost || 0;
   const reportWash = route.dailyReport?.carWashCost || 0;
-  const totalCosts = (route.driverPay || 0) + (reportFuel > 0 ? reportFuel : (route.fuelCost || 0)) + reportWash;
+  const totalCosts = (route.driverPay || 0) + (reportFuel > 0 ? reportFuel : (route.fuelCost || 0)) + reportAdblue + reportWash;
   const netProfit = ordersTotal - totalCosts;
   const hasOrders = route.orders && route.orders.length > 0;
   const report = route.dailyReport;
@@ -1373,6 +1375,11 @@ function RouteCard({
               {reportFuel > 0 && (
                 <span className="px-2 py-0.5 bg-orange-50 text-orange-600 rounded">
                   Nafta: -{reportFuel.toLocaleString('cs-CZ')} Kč
+                </span>
+              )}
+              {reportAdblue > 0 && (
+                <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded">
+                  AdBlue: -{reportAdblue.toLocaleString('cs-CZ')} Kč
                 </span>
               )}
               {reportWash > 0 && (
@@ -1476,7 +1483,7 @@ function RouteCard({
           )}
 
           {/* Finanční souhrn v detailu */}
-          {(ordersTotal !== 0 || route.driverPay > 0 || reportFuel > 0 || reportWash > 0) && (
+          {(ordersTotal !== 0 || route.driverPay > 0 || reportFuel > 0 || reportAdblue > 0 || reportWash > 0) && (
             <div className="bg-gray-50 rounded-lg p-3 text-sm space-y-1.5">
               <div className="text-xs font-medium text-gray-500 uppercase mb-2">Finanční souhrn</div>
               <div className="flex justify-between">
@@ -1493,6 +1500,12 @@ function RouteCard({
                 <div className="flex justify-between">
                   <span className="text-gray-500">Nafta:</span>
                   <span className="font-medium text-red-600">-{reportFuel.toLocaleString('cs-CZ')} Kč</span>
+                </div>
+              )}
+              {reportAdblue > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">AdBlue:</span>
+                  <span className="font-medium text-red-600">-{reportAdblue.toLocaleString('cs-CZ')} Kč</span>
                 </div>
               )}
               {reportWash > 0 && (
