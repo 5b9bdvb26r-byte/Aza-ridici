@@ -1353,6 +1353,11 @@ function RouteCard({
                 }
               </span>
             )}
+            {report?.avgConsumption != null && report.avgConsumption > 0 && (
+              <span className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded">
+                {report.avgConsumption.toLocaleString('cs-CZ')} l/100km
+              </span>
+            )}
             {route.complaintCount > 0 && (
               <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-bold rounded-full">
                 {route.complaintCount} rekl.
