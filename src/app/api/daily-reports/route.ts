@@ -122,12 +122,20 @@ export async function POST(request: Request) {
         },
       });
 
-      // Aktualizovat stav tachometru vozidla
+      // Aktualizovat stav tachometru vozidla + reset AdBlue při tankování
+      const vehicleUpdate: Record<string, number | Date> = {
+        currentKm: endKmValue,
+      };
+
+      if (adblueCostValue > 0 && vehicle) {
+        vehicleUpdate.adblueLastKm = endKmValue;
+        vehicleUpdate.adblueKm = endKmValue + vehicle.adblueLimitKm;
+        vehicleUpdate.adblueLastReset = new Date();
+      }
+
       await tx.vehicle.update({
         where: { id: vehicleId },
-        data: {
-          currentKm: endKmValue,
-        },
+        data: vehicleUpdate,
       });
 
       return report;
