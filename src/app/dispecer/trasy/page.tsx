@@ -34,6 +34,7 @@ interface DailyReport {
   fuelCost: number;
   adblueCost: number;
   carWashCost: number;
+  avgConsumption: number | null;
   carCheck: string;
   carCheckNote: string | null;
   createdAt: string;
@@ -1468,10 +1469,19 @@ function RouteCard({
                 </span>
                 <span className="text-gray-600">Report od řidiče</span>
               </div>
-              <div className="text-gray-600">
-                Konečný stav tach.: <strong>{report.endKm ? report.endKm.toLocaleString('cs-CZ') : report.actualKm} km</strong>
-                {report.endKm && report.actualKm > 0 && <span className="ml-3">Ujeté: <strong>{report.actualKm.toLocaleString('cs-CZ')} km</strong></span>}
-                {report.fuelCost > 0 && <span className="ml-3">Nafta: <strong>{report.fuelCost.toLocaleString('cs-CZ')} Kč</strong></span>}
+              <div className="text-gray-600 space-y-0.5">
+                <div>
+                  Konečný stav tach.: <strong>{report.endKm ? report.endKm.toLocaleString('cs-CZ') : report.actualKm} km</strong>
+                  {report.endKm && report.actualKm > 0 && <span className="ml-3">Ujeté: <strong>{report.actualKm.toLocaleString('cs-CZ')} km</strong></span>}
+                  {report.avgConsumption != null && report.avgConsumption > 0 && <span className="ml-3">Spotřeba: <strong>{report.avgConsumption.toLocaleString('cs-CZ')} l/100km</strong></span>}
+                </div>
+                {(report.fuelCost > 0 || report.adblueCost > 0 || report.carWashCost > 0) && (
+                  <div>
+                    {report.fuelCost > 0 && <span>Nafta: <strong>{report.fuelCost.toLocaleString('cs-CZ')} Kč</strong></span>}
+                    {report.adblueCost > 0 && <span className="ml-3">AdBlue: <strong>{report.adblueCost.toLocaleString('cs-CZ')} Kč</strong></span>}
+                    {report.carWashCost > 0 && <span className="ml-3">Myčka: <strong>{report.carWashCost.toLocaleString('cs-CZ')} Kč</strong></span>}
+                  </div>
+                )}
               </div>
               {report.carCheckNote && <p className="text-red-600 mt-1">{report.carCheckNote}</p>}
               {report.createdAt && (
