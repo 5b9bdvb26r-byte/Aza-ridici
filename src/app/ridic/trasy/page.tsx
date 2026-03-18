@@ -74,6 +74,7 @@ export default function DriverRoutesPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
+  const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
 
   useEffect(() => {
     Promise.all([fetchRoutes(), fetchReports(), fetchVehicles()]).then(() => setIsLoading(false));
@@ -501,11 +502,11 @@ export default function DriverRoutesPage() {
                           Zrušit
                         </button>
                         <button
-                          onClick={handleSubmitReport}
+                          onClick={() => setShowConfirmSubmit(true)}
                           disabled={isSaving || !reportForm.endKm || !reportForm.vehicleId}
                           className="btn-primary flex-1"
                         >
-                          {isSaving ? 'Odesílám...' : 'Odeslat report'}
+                          Odeslat report
                         </button>
                       </div>
                     </div>
@@ -763,6 +764,69 @@ export default function DriverRoutesPage() {
       {routes.length === 0 && (
         <div className="card py-12 text-center text-gray-500">
           Žádné přiřazené trasy
+        </div>
+      )}
+
+      {/* Potvrzení odeslání reportu */}
+      {showConfirmSubmit && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold mb-3">Potvrdit odeslání reportu</h3>
+            <div className="bg-gray-50 rounded-lg p-3 mb-4 text-sm space-y-1">
+              {reportForm.endKm && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Konečný stav tach.:</span>
+                  <span className="font-medium">{parseInt(reportForm.endKm).toLocaleString('cs-CZ')} km</span>
+                </div>
+              )}
+              {reportForm.fuelCost && parseFloat(reportForm.fuelCost) > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Nafta:</span>
+                  <span className="font-medium">{parseFloat(reportForm.fuelCost).toLocaleString('cs-CZ')} Kč</span>
+                </div>
+              )}
+              {reportForm.adblueCost && parseFloat(reportForm.adblueCost) > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">AdBlue:</span>
+                  <span className="font-medium">{parseFloat(reportForm.adblueCost).toLocaleString('cs-CZ')} Kč</span>
+                </div>
+              )}
+              {reportForm.carWashCost && parseFloat(reportForm.carWashCost) > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Myčka:</span>
+                  <span className="font-medium">{parseFloat(reportForm.carWashCost).toLocaleString('cs-CZ')} Kč</span>
+                </div>
+              )}
+              {reportForm.avgConsumption && parseFloat(reportForm.avgConsumption) > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Spotřeba:</span>
+                  <span className="font-medium">{reportForm.avgConsumption} l/100km</span>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span className="text-gray-500">Stav vozidla:</span>
+                <span className={cn('font-bold', reportForm.carCheck === 'OK' ? 'text-green-600' : 'text-red-600')}>
+                  {reportForm.carCheck}
+                </span>
+              </div>
+              {reportForm.carCheck === 'NOK' && reportForm.carCheckNote && (
+                <div className="text-red-600 text-xs mt-1">{reportForm.carCheckNote}</div>
+              )}
+            </div>
+            <p className="text-sm text-gray-600 mb-4">Jsou tyto údaje správné? Po odeslání je nebude možné změnit.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setShowConfirmSubmit(false)} className="btn-secondary flex-1">
+                Zpět k úpravám
+              </button>
+              <button
+                onClick={() => { setShowConfirmSubmit(false); handleSubmitReport(); }}
+                disabled={isSaving}
+                className="btn-primary flex-1"
+              >
+                {isSaving ? 'Odesílám...' : 'Potvrdit a odeslat'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

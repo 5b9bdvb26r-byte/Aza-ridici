@@ -115,6 +115,19 @@ export default function RoutesPage() {
   const [completeModal, setCompleteModal] = useState<Route | null>(null);
   const [actualKmInput, setActualKmInput] = useState('');
 
+  // Editace reportu dispečerem
+  const [editReportModal, setEditReportModal] = useState<DailyReport | null>(null);
+  const [editReportForm, setEditReportForm] = useState({
+    endKm: '',
+    fuelCost: '',
+    adblueCost: '',
+    carWashCost: '',
+    avgConsumption: '',
+    carCheck: 'OK',
+    carCheckNote: '',
+  });
+  const [isSavingReport, setIsSavingReport] = useState(false);
+
   // Tisk
   const [printRoutes, setPrintRoutes] = useState<Route[] | null>(null);
   const [printTitle, setPrintTitle] = useState('');
@@ -396,6 +409,39 @@ export default function RoutesPage() {
       const bOrder = bAvail ? order[bAvail.status] : 3;
       return aOrder - bOrder;
     });
+  };
+
+  const openEditReport = (report: DailyReport) => {
+    setEditReportForm({
+      endKm: report.endKm?.toString() || '',
+      fuelCost: report.fuelCost?.toString() || '0',
+      adblueCost: report.adblueCost?.toString() || '0',
+      carWashCost: report.carWashCost?.toString() || '0',
+      avgConsumption: report.avgConsumption?.toString() || '',
+      carCheck: report.carCheck || 'OK',
+      carCheckNote: report.carCheckNote || '',
+    });
+    setEditReportModal(report);
+  };
+
+  const handleSaveReport = async () => {
+    if (!editReportModal) return;
+    setIsSavingReport(true);
+    try {
+      const response = await fetch(`/api/daily-reports/${editReportModal.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editReportForm),
+      });
+      if (response.ok) {
+        await fetchRoutes();
+        setEditReportModal(null);
+      }
+    } catch (error) {
+      console.error('Chyba při editaci reportu:', error);
+    } finally {
+      setIsSavingReport(false);
+    }
   };
 
   // ===== ROZŘAZENÍ TRAS DO ZÁLOŽEK =====
@@ -1106,6 +1152,7 @@ export default function RoutesPage() {
                 <RouteCard key={route.id} route={route} expanded={expandedRoutes.has(route.id)}
                   onToggle={() => toggleRoute(route.id)} onEdit={handleEdit}
                   onDelete={handleDelete} onStatusChange={handleStatusChange}
+                  onEditReport={openEditReport}
                   showReport />
               ))}
             </div>
@@ -1267,13 +1314,83 @@ export default function RoutesPage() {
           </div>
         </div>
       )}
+
+      {/* Modál - Editace reportu dispečerem */}
+      {editReportModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold mb-4">Upravit report</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Konečný stav tach. (km)</label>
+                <input type="number" value={editReportForm.endKm}
+                  onChange={(e) => setEditReportForm({ ...editReportForm, endKm: e.target.value })}
+                  className="input w-full" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nafta (Kč)</label>
+                <input type="number" value={editReportForm.fuelCost}
+                  onChange={(e) => setEditReportForm({ ...editReportForm, fuelCost: e.target.value })}
+                  className="input w-full" min="0" step="1" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">AdBlue (Kč)</label>
+                <input type="number" value={editReportForm.adblueCost}
+                  onChange={(e) => setEditReportForm({ ...editReportForm, adblueCost: e.target.value })}
+                  className="input w-full" min="0" step="1" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Myčka (Kč)</label>
+                <input type="number" value={editReportForm.carWashCost}
+                  onChange={(e) => setEditReportForm({ ...editReportForm, carWashCost: e.target.value })}
+                  className="input w-full" min="0" step="1" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Průměrná spotřeba (l/100km)</label>
+                <input type="number" value={editReportForm.avgConsumption}
+                  onChange={(e) => setEditReportForm({ ...editReportForm, avgConsumption: e.target.value })}
+                  className="input w-full" min="0" step="0.1" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Stav vozidla</label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setEditReportForm({ ...editReportForm, carCheck: 'OK', carCheckNote: '' })}
+                    className={cn('px-4 py-2 rounded-lg text-sm font-medium flex-1',
+                      editReportForm.carCheck === 'OK' ? 'bg-green-100 text-green-700 ring-2 ring-green-500' : 'bg-gray-100 text-gray-600')}
+                  >OK</button>
+                  <button
+                    onClick={() => setEditReportForm({ ...editReportForm, carCheck: 'NOK' })}
+                    className={cn('px-4 py-2 rounded-lg text-sm font-medium flex-1',
+                      editReportForm.carCheck === 'NOK' ? 'bg-red-100 text-red-700 ring-2 ring-red-500' : 'bg-gray-100 text-gray-600')}
+                  >NOK</button>
+                </div>
+              </div>
+              {editReportForm.carCheck === 'NOK' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Popis závady</label>
+                  <textarea value={editReportForm.carCheckNote}
+                    onChange={(e) => setEditReportForm({ ...editReportForm, carCheckNote: e.target.value })}
+                    className="input w-full min-h-[80px] resize-y" />
+                </div>
+              )}
+            </div>
+            <div className="flex gap-3 mt-4">
+              <button onClick={() => setEditReportModal(null)} className="btn-secondary flex-1">Zrušit</button>
+              <button onClick={handleSaveReport} disabled={isSavingReport} className="btn-primary flex-1">
+                {isSavingReport ? 'Ukládám...' : 'Uložit'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 // ===== ROUTE CARD =====
 function RouteCard({
-  route, expanded, onToggle, onEdit, onDelete, onStatusChange, hideDate, showPendingBadge, showReport,
+  route, expanded, onToggle, onEdit, onDelete, onStatusChange, onEditReport, hideDate, showPendingBadge, showReport,
 }: {
   route: Route;
   expanded: boolean;
@@ -1281,6 +1398,7 @@ function RouteCard({
   onEdit: (route: Route) => void;
   onDelete: (id: string) => void;
   onStatusChange: (route: Route, status: string) => void;
+  onEditReport?: (report: DailyReport) => void;
   hideDate?: boolean;
   showPendingBadge?: boolean;
   showReport?: boolean;
@@ -1467,12 +1585,23 @@ function RouteCard({
           {report && (
             <div className={cn('text-sm rounded-lg p-3',
               report.carCheck === 'OK' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200')}>
-              <div className="flex items-center gap-2 mb-1">
-                <span className={cn('px-2 py-0.5 rounded-full text-xs font-bold',
-                  report.carCheck === 'OK' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700')}>
-                  {report.carCheck}
-                </span>
-                <span className="text-gray-600">Report od řidiče</span>
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2">
+                  <span className={cn('px-2 py-0.5 rounded-full text-xs font-bold',
+                    report.carCheck === 'OK' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700')}>
+                    {report.carCheck}
+                  </span>
+                  <span className="text-gray-600">Report od řidiče</span>
+                </div>
+                {onEditReport && (
+                  <button
+                    onClick={() => onEditReport(report)}
+                    className="text-xs px-2 py-1 text-gray-500 hover:text-primary-600 hover:bg-gray-100 rounded transition-colors"
+                    title="Upravit report"
+                  >
+                    ✎ Upravit
+                  </button>
+                )}
               </div>
               <div className="text-gray-600 space-y-0.5">
                 <div>
