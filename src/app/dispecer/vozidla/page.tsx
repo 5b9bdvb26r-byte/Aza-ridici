@@ -414,7 +414,7 @@ export default function VehiclesPage() {
     const vignetteStatus = getVignetteStatus(v.highwayVignetteDate);
     return (
       (v.oilKm > 0 && v.currentKm >= v.oilKm) ||
-      (v.adblueKm > 0 && v.currentKm >= v.adblueKm) ||
+      (v.adblueLimitKm > 0 && v.adblueKm > 0 && v.currentKm >= v.adblueKm) ||
       (v.brakesKm > 0 && v.currentKm >= v.brakesKm) ||
       (v.bearingsKm > 0 && v.currentKm >= v.bearingsKm) ||
       getBrakeFluidDateStatus(v.brakeFluidDate, v.brakeFluidLimitMonths).status === 'expired' ||
@@ -787,7 +787,7 @@ export default function VehiclesPage() {
           const vignetteStatus = getVignetteStatus(vehicle.highwayVignetteDate);
           const needsAttention =
             (vehicle.oilKm > 0 && vehicle.currentKm >= vehicle.oilKm) ||
-            (vehicle.adblueKm > 0 && vehicle.currentKm >= vehicle.adblueKm) ||
+            (vehicle.adblueLimitKm > 0 && vehicle.adblueKm > 0 && vehicle.currentKm >= vehicle.adblueKm) ||
             (vehicle.brakesKm > 0 && vehicle.currentKm >= vehicle.brakesKm) ||
             (vehicle.bearingsKm > 0 && vehicle.currentKm >= vehicle.bearingsKm) ||
             getBrakeFluidDateStatus(vehicle.brakeFluidDate, vehicle.brakeFluidLimitMonths).status === 'expired' ||
@@ -864,18 +864,20 @@ export default function VehiclesPage() {
                     setEditTargetValue(vehicle.oilLastKm.toString());
                   }}
                 />
-                <TachoProgressBar
-                  targetKm={vehicle.adblueKm}
-                  lastServiceKm={vehicle.adblueLastKm}
-                  currentKm={vehicle.currentKm}
-                  intervalKm={vehicle.adblueLimitKm}
-                  label="AdBlue"
-                  icon="💧"
-                  onEdit={() => {
-                    setEditTargetModal({ vehicle, type: 'adblue', label: 'AdBlue' });
-                    setEditTargetValue(vehicle.adblueLastKm.toString());
-                  }}
-                />
+                {vehicle.adblueLimitKm > 0 && (
+                  <TachoProgressBar
+                    targetKm={vehicle.adblueKm}
+                    lastServiceKm={vehicle.adblueLastKm}
+                    currentKm={vehicle.currentKm}
+                    intervalKm={vehicle.adblueLimitKm}
+                    label="AdBlue"
+                    icon="💧"
+                    onEdit={() => {
+                      setEditTargetModal({ vehicle, type: 'adblue', label: 'AdBlue' });
+                      setEditTargetValue(vehicle.adblueLastKm.toString());
+                    }}
+                  />
+                )}
                 <TachoProgressBar
                   targetKm={vehicle.brakesKm}
                   lastServiceKm={vehicle.brakesLastKm}
