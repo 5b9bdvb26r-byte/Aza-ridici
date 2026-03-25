@@ -48,7 +48,8 @@ export default function DispatcherDashboard() {
       const response = await fetch('/api/drivers');
       if (response.ok) {
         const data = await response.json();
-        setDrivers(data);
+        // Filtrovat jen řidiče (ne WAREHOUSE) pro kalendář dostupnosti
+        setDrivers(data.filter((d: Driver & { role?: string }) => d.role !== 'WAREHOUSE'));
         driversLoadedRef.current = true;
       }
     } catch (error) {

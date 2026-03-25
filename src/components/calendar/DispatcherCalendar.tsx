@@ -67,12 +67,6 @@ export interface DriverDayStatus {
 
 export type { Route as CalendarRoute };
 
-const statusColors: Record<string, string> = {
-  AVAILABLE: 'bg-green-500',
-  UNAVAILABLE: 'bg-red-500',
-  PARTIAL: 'bg-orange-500',
-};
-
 export function DispatcherCalendar({
   drivers,
   availability,
@@ -108,13 +102,9 @@ export function DispatcherCalendar({
     return routes.filter((route) => isSameDay(new Date(route.date), date));
   };
 
-  const getDaySummary = (date: Date) => {
-    const statuses = getDriversStatusForDay(date);
-    const available = statuses.filter((s) => s.status === 'AVAILABLE').length;
-    const partial = statuses.filter((s) => s.status === 'PARTIAL').length;
-    const unavailable = statuses.filter((s) => s.status === 'UNAVAILABLE').length;
-    const notSet = statuses.filter((s) => s.status === null).length;
-    return { available, partial, unavailable, notSet, total: drivers.length };
+  // Počet dostupných řidičů (AVAILABLE = klikl na den)
+  const getAvailableCount = (date: Date) => {
+    return getDriversStatusForDay(date).filter((s) => s.status === 'AVAILABLE').length;
   };
 
   const weekDays = ['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'];
@@ -155,7 +145,10 @@ export function DispatcherCalendar({
           const isCurrentMonth = isSameMonth(day, currentMonth);
           const driversStatus = getDriversStatusForDay(day);
           const dayRoutes = getRoutesForDay(day);
-          const summary = getDaySummary(day);
+          const availableCount = getAvailableCount(day);
+
+          // Řidiči kteří jsou dostupní (mají záznam AVAILABLE)
+          const availableDrivers = driversStatus.filter((s) => s.status === 'AVAILABLE');
 
           return (
             <button
@@ -179,19 +172,10 @@ export function DispatcherCalendar({
                 >
                   {format(day, 'd')}
                 </span>
-                {isCurrentMonth && (summary.available > 0 || summary.partial > 0) && (
-                  <div className="hidden sm:flex items-center gap-0.5">
-                    {summary.available > 0 && (
-                      <span className="text-[10px] font-bold text-green-700 bg-green-100 rounded-full px-1.5 py-0.5">
-                        {summary.available}
-                      </span>
-                    )}
-                    {summary.partial > 0 && (
-                      <span className="text-[10px] font-bold text-orange-700 bg-orange-100 rounded-full px-1.5 py-0.5">
-                        {summary.partial}
-                      </span>
-                    )}
-                  </div>
+                {isCurrentMonth && availableCount > 0 && (
+                  <span className="hidden sm:flex text-[10px] font-bold text-gray-500 bg-gray-100 rounded-full px-1.5 py-0.5">
+                    {availableCount}
+                  </span>
                 )}
               </div>
 
@@ -224,26 +208,21 @@ export function DispatcherCalendar({
                 </div>
               )}
 
-              {/* Dostupnost řidičů - dole */}
-              {isCurrentMonth && drivers.length > 0 && (
+              {/* Barevné tečky dostupných řidičů */}
+              {isCurrentMonth && availableDrivers.length > 0 && (
                 <div className="mt-auto pt-0.5 sm:pt-1 border-t border-gray-100">
                   <div className="flex flex-wrap gap-0.5 justify-center">
-                    {driversStatus.slice(0, 8).map(({ driver, status }) => (
+                    {availableDrivers.slice(0, 8).map(({ driver }) => (
                       <div
                         key={driver.id}
-                        className={cn(
-                          'w-2 h-2 sm:w-3 sm:h-3 rounded-full border',
-                          status ? statusColors[status] : 'bg-gray-200 border-gray-300',
-                          status === 'AVAILABLE' && 'border-green-600',
-                          status === 'UNAVAILABLE' && 'border-red-600',
-                          status === 'PARTIAL' && 'border-orange-600'
-                        )}
-                        title={`${driver.name}: ${status ? getStatusLabel(status) : 'Nevyplněno'}`}
+                        className="w-2 h-2 sm:w-3 sm:h-3 rounded-full"
+                        style={{ backgroundColor: driver.color || '#9CA3AF' }}
+                        title={`${driver.name}: může`}
                       />
                     ))}
-                    {driversStatus.length > 8 && (
+                    {availableDrivers.length > 8 && (
                       <span className="text-[9px] text-gray-400 hidden sm:inline">
-                        +{driversStatus.length - 8}
+                        +{availableDrivers.length - 8}
                       </span>
                     )}
                   </div>
@@ -254,35 +233,23 @@ export function DispatcherCalendar({
         })}
       </div>
 
+      {/* Legenda — barvy řidičů */}
       <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-gray-200">
         <div className="flex items-center justify-center flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm">
-          <div className="flex items-center space-x-1 sm:space-x-2">
-            <span className="w-3 h-3 sm:w-4 sm:h-4 bg-green-500 rounded-full" />
-            <span>Dostupný</span>
-          </div>
-          <div className="flex items-center space-x-1 sm:space-x-2">
-            <span className="w-3 h-3 sm:w-4 sm:h-4 bg-orange-500 rounded-full" />
-            <span>Částečně</span>
-          </div>
-          <div className="flex items-center space-x-1 sm:space-x-2">
-            <span className="w-3 h-3 sm:w-4 sm:h-4 bg-red-500 rounded-full" />
-            <span>Nedostupný</span>
-          </div>
-          <div className="flex items-center space-x-1 sm:space-x-2">
-            <span className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-300 rounded-full" />
-            <span>Nevyplněno</span>
-          </div>
+          {drivers.map((driver) => (
+            <div key={driver.id} className="flex items-center space-x-1 sm:space-x-2">
+              <span
+                className="w-3 h-3 sm:w-4 sm:h-4 rounded-full"
+                style={{ backgroundColor: driver.color || '#9CA3AF' }}
+              />
+              <span>{driver.name}</span>
+            </div>
+          ))}
         </div>
+        <p className="text-center text-xs text-gray-400 mt-2">
+          Tečka = řidič může v daný den
+        </p>
       </div>
     </div>
   );
-}
-
-function getStatusLabel(status: string): string {
-  const labels: Record<string, string> = {
-    AVAILABLE: 'Dostupný',
-    UNAVAILABLE: 'Nedostupný',
-    PARTIAL: 'Částečně dostupný',
-  };
-  return labels[status] || status;
 }
