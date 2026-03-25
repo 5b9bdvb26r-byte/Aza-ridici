@@ -81,6 +81,19 @@ export async function PUT(
       await prisma.order.deleteMany({ where: { routeId: params.id } });
     }
 
+    // Automaticky nastavit dostupnost řidiče na daný den
+    const resolvedDriverId = driverId || currentRoute.driverId;
+    const resolvedDate = date ? new Date(date) : currentRoute.date;
+    if (resolvedDriverId && resolvedDate) {
+      const routeDate = new Date(resolvedDate);
+      routeDate.setUTCHours(0, 0, 0, 0);
+      await prisma.availability.upsert({
+        where: { userId_date: { userId: resolvedDriverId, date: routeDate } },
+        update: { status: 'AVAILABLE' },
+        create: { userId: resolvedDriverId, date: routeDate, status: 'AVAILABLE' },
+      });
+    }
+
     // Aktualizovat trasu
     const route = await prisma.route.update({
       where: { id: params.id },

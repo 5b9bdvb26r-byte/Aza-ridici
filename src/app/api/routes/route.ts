@@ -77,6 +77,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Automaticky nastavit dostupnost řidiče na daný den
+    if (driverId && date) {
+      const routeDate = new Date(date);
+      routeDate.setUTCHours(0, 0, 0, 0);
+      await prisma.availability.upsert({
+        where: { userId_date: { userId: driverId, date: routeDate } },
+        update: { status: 'AVAILABLE' },
+        create: { userId: driverId, date: routeDate, status: 'AVAILABLE' },
+      });
+    }
+
     const route = await prisma.route.create({
       data: {
         name,
