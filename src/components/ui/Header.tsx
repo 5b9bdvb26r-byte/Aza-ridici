@@ -14,6 +14,7 @@ export function Header() {
   const [nokCount, setNokCount] = useState(0);
   const [pendingRoutes, setPendingRoutes] = useState(0);
   const [notesCount, setNotesCount] = useState(0);
+  const [vehicleAlerts, setVehicleAlerts] = useState(0);
 
   const isDispatcher =
     session?.user?.role === 'DISPATCHER' || session?.user?.role === 'ADMIN';
@@ -89,6 +90,27 @@ export function Header() {
 
     fetchNotesCount();
     const interval = setInterval(fetchNotesCount, 60000);
+    return () => clearInterval(interval);
+  }, [isDispatcher, isWarehouse]);
+
+  // Fetch vehicle alert count for dispatcher/warehouse badge
+  useEffect(() => {
+    if (!isDispatcher && !isWarehouse) return;
+
+    const fetchVehicleAlerts = async () => {
+      try {
+        const response = await fetch('/api/vehicles/alert-count');
+        if (response.ok) {
+          const data = await response.json();
+          setVehicleAlerts(data.count);
+        }
+      } catch {
+        // silently fail
+      }
+    };
+
+    fetchVehicleAlerts();
+    const interval = setInterval(fetchVehicleAlerts, 60000);
     return () => clearInterval(interval);
   }, [isDispatcher, isWarehouse]);
 
@@ -191,7 +213,7 @@ export function Header() {
               <>
                 <NavLink href="/dispecer">Přehled řidičů</NavLink>
                 <NavLink href="/dispecer/trasy">Trasy</NavLink>
-                <NavLink href="/dispecer/vozidla">Vozidla</NavLink>
+                <NavLink href="/dispecer/vozidla" badge={vehicleAlerts}>Vozidla</NavLink>
                 <NavLink href="/dispecer/zamestnanci">Zaměstnanci</NavLink>
                 <NavLink href="/dispecer/statistiky">Statistiky</NavLink>
                 <NavLink href="/dispecer/poznamky" badge={notesCount}>Poznámky</NavLink>
@@ -200,7 +222,7 @@ export function Header() {
               </>
             ) : isWarehouse ? (
               <>
-                <NavLink href="/dispecer/vozidla">Vozidla</NavLink>
+                <NavLink href="/dispecer/vozidla" badge={vehicleAlerts}>Vozidla</NavLink>
                 <NavLink href="/dispecer/poznamky" badge={notesCount}>Poznámky</NavLink>
                 <NavLink href="/dispecer/sklad">Sklad</NavLink>
                 <NavLink href="/dispecer/hlaseni" badge={nokCount}>Hlášení</NavLink>
@@ -225,7 +247,7 @@ export function Header() {
                 <>
                   <NavLink href="/dispecer">Přehled řidičů</NavLink>
                   <NavLink href="/dispecer/trasy">Trasy</NavLink>
-                  <NavLink href="/dispecer/vozidla">Vozidla</NavLink>
+                  <NavLink href="/dispecer/vozidla" badge={vehicleAlerts}>Vozidla</NavLink>
                   <NavLink href="/dispecer/zamestnanci">Zaměstnanci</NavLink>
                   <NavLink href="/dispecer/statistiky">Statistiky</NavLink>
                   <NavLink href="/dispecer/poznamky" badge={notesCount}>Poznámky</NavLink>
@@ -234,7 +256,7 @@ export function Header() {
                 </>
               ) : isWarehouse ? (
                 <>
-                  <NavLink href="/dispecer/vozidla">Vozidla</NavLink>
+                  <NavLink href="/dispecer/vozidla" badge={vehicleAlerts}>Vozidla</NavLink>
                   <NavLink href="/dispecer/poznamky" badge={notesCount}>Poznámky</NavLink>
                   <NavLink href="/dispecer/sklad">Sklad</NavLink>
                   <NavLink href="/dispecer/hlaseni" badge={nokCount}>Hlášení</NavLink>
