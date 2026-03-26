@@ -20,15 +20,16 @@ export async function GET() {
       const brakesAlert = v.brakesKm > 0 && (v.brakesKm - v.currentKm) <= 1000;
       const bearingsAlert = v.bearingsKm > 0 && (v.bearingsKm - v.currentKm) <= 1000;
 
-      // Date-based checks
-      const brakeFluidExpired = v.brakeFluidDate ? new Date(v.brakeFluidDate) <= now : false;
-      const fridexExpired = v.fridexDate ? new Date(v.fridexDate) <= now : false;
-      const greenCardExpired = v.greenCardDate ? new Date(v.greenCardDate) <= now : false;
-      const technicalExpired = v.technicalInspectionDate ? new Date(v.technicalInspectionDate) <= now : false;
-      const vignetteExpired = v.highwayVignetteDate ? new Date(v.highwayVignetteDate) <= now : false;
+      // Date-based checks (14 days for brake fluid, fridex, green card, vignette; 60 days for STK)
+      const daysUntil = (date: Date | null) => date ? Math.ceil((new Date(date).getTime() - now.getTime()) / 86400000) : null;
+      const brakeFluidAlert = daysUntil(v.brakeFluidDate) !== null && daysUntil(v.brakeFluidDate)! <= 14;
+      const fridexAlert = daysUntil(v.fridexDate) !== null && daysUntil(v.fridexDate)! <= 14;
+      const greenCardAlert = daysUntil(v.greenCardDate) !== null && daysUntil(v.greenCardDate)! <= 14;
+      const technicalAlert = daysUntil(v.technicalInspectionDate) !== null && daysUntil(v.technicalInspectionDate)! <= 60;
+      const vignetteAlert = daysUntil(v.highwayVignetteDate) !== null && daysUntil(v.highwayVignetteDate)! <= 14;
 
       return oilAlert || adblueAlert || brakesAlert || bearingsAlert ||
-        brakeFluidExpired || fridexExpired || greenCardExpired || technicalExpired || vignetteExpired;
+        brakeFluidAlert || fridexAlert || greenCardAlert || technicalAlert || vignetteAlert;
     }).length;
 
     return NextResponse.json({ count });

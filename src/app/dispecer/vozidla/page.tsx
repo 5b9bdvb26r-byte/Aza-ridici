@@ -362,7 +362,7 @@ export default function VehiclesPage() {
     if (daysRemaining <= 0) {
       return { status: 'expired', text: 'Propadlá!', percentage: 100, daysRemaining: 0, limitMonths };
     }
-    if (daysRemaining <= 30) {
+    if (daysRemaining <= 14) {
       return { status: 'soon', text: `${daysRemaining} dní`, percentage, daysRemaining, limitMonths };
     }
     return { status: 'ok', text: format(expirationDate, 'd.M.yyyy', { locale: cs }), percentage, daysRemaining, limitMonths };
@@ -396,7 +396,7 @@ export default function VehiclesPage() {
     if (daysRemaining <= 0) {
       return { status: 'expired', text: 'Propadlá!', percentage: 100, daysRemaining: 0 };
     }
-    if (daysRemaining <= 30) {
+    if (daysRemaining <= 60) {
       return { status: 'soon', text: `${daysRemaining} dní`, percentage, daysRemaining };
     }
     return { status: 'ok', text: format(inspectionDate, 'd.M.yyyy', { locale: cs }), percentage, daysRemaining };
@@ -417,11 +417,11 @@ export default function VehiclesPage() {
       (v.adblueLimitKm > 0 && v.adblueKm > 0 && (v.adblueKm - v.currentKm) <= 100) ||
       (v.brakesKm > 0 && (v.brakesKm - v.currentKm) <= 1000) ||
       (v.bearingsKm > 0 && (v.bearingsKm - v.currentKm) <= 1000) ||
-      getBrakeFluidDateStatus(v.brakeFluidDate, v.brakeFluidLimitMonths).status === 'expired' ||
-      getFridexDateStatus(v.fridexDate, v.fridexLimitMonths).status === 'expired' ||
-      greenCardStatus.status === 'expired' ||
-      technicalStatus.status === 'expired' ||
-      vignetteStatus.status === 'expired'
+      ['expired', 'soon'].includes(getBrakeFluidDateStatus(v.brakeFluidDate, v.brakeFluidLimitMonths).status) ||
+      ['expired', 'soon'].includes(getFridexDateStatus(v.fridexDate, v.fridexLimitMonths).status) ||
+      ['expired', 'soon'].includes(greenCardStatus.status) ||
+      ['expired', 'soon'].includes(technicalStatus.status) ||
+      ['expired', 'soon'].includes(vignetteStatus.status)
     );
   }).length;
 
@@ -790,11 +790,11 @@ export default function VehiclesPage() {
             (vehicle.adblueLimitKm > 0 && vehicle.adblueKm > 0 && (vehicle.adblueKm - vehicle.currentKm) <= 100) ||
             (vehicle.brakesKm > 0 && (vehicle.brakesKm - vehicle.currentKm) <= 1000) ||
             (vehicle.bearingsKm > 0 && (vehicle.bearingsKm - vehicle.currentKm) <= 1000) ||
-            getBrakeFluidDateStatus(vehicle.brakeFluidDate, vehicle.brakeFluidLimitMonths).status === 'expired' ||
-            getFridexDateStatus(vehicle.fridexDate, vehicle.fridexLimitMonths).status === 'expired' ||
-            greenCardStatus.status === 'expired' ||
-            technicalStatus.status === 'expired' ||
-            vignetteStatus.status === 'expired';
+            ['expired', 'soon'].includes(getBrakeFluidDateStatus(vehicle.brakeFluidDate, vehicle.brakeFluidLimitMonths).status) ||
+            ['expired', 'soon'].includes(getFridexDateStatus(vehicle.fridexDate, vehicle.fridexLimitMonths).status) ||
+            ['expired', 'soon'].includes(greenCardStatus.status) ||
+            ['expired', 'soon'].includes(technicalStatus.status) ||
+            ['expired', 'soon'].includes(vignetteStatus.status);
           const isExpanded = expandedVehicle === vehicle.id;
           const vehicleRepairs = repairs.filter(r => r.vehicleId === vehicle.id);
 
