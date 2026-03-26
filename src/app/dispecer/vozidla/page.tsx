@@ -413,10 +413,10 @@ export default function VehiclesPage() {
     const technicalStatus = getTechnicalStatus(v.technicalInspectionDate);
     const vignetteStatus = getVignetteStatus(v.highwayVignetteDate);
     return (
-      (v.oilKm > 0 && v.currentKm >= v.oilKm) ||
-      (v.adblueLimitKm > 0 && v.adblueKm > 0 && v.currentKm >= v.adblueKm) ||
-      (v.brakesKm > 0 && v.currentKm >= v.brakesKm) ||
-      (v.bearingsKm > 0 && v.currentKm >= v.bearingsKm) ||
+      (v.oilKm > 0 && (v.oilKm - v.currentKm) <= 1000) ||
+      (v.adblueLimitKm > 0 && v.adblueKm > 0 && (v.adblueKm - v.currentKm) <= 100) ||
+      (v.brakesKm > 0 && (v.brakesKm - v.currentKm) <= 1000) ||
+      (v.bearingsKm > 0 && (v.bearingsKm - v.currentKm) <= 1000) ||
       getBrakeFluidDateStatus(v.brakeFluidDate, v.brakeFluidLimitMonths).status === 'expired' ||
       getFridexDateStatus(v.fridexDate, v.fridexLimitMonths).status === 'expired' ||
       greenCardStatus.status === 'expired' ||
@@ -786,10 +786,10 @@ export default function VehiclesPage() {
           const technicalStatus = getTechnicalStatus(vehicle.technicalInspectionDate);
           const vignetteStatus = getVignetteStatus(vehicle.highwayVignetteDate);
           const needsAttention =
-            (vehicle.oilKm > 0 && vehicle.currentKm >= vehicle.oilKm) ||
-            (vehicle.adblueLimitKm > 0 && vehicle.adblueKm > 0 && vehicle.currentKm >= vehicle.adblueKm) ||
-            (vehicle.brakesKm > 0 && vehicle.currentKm >= vehicle.brakesKm) ||
-            (vehicle.bearingsKm > 0 && vehicle.currentKm >= vehicle.bearingsKm) ||
+            (vehicle.oilKm > 0 && (vehicle.oilKm - vehicle.currentKm) <= 1000) ||
+            (vehicle.adblueLimitKm > 0 && vehicle.adblueKm > 0 && (vehicle.adblueKm - vehicle.currentKm) <= 100) ||
+            (vehicle.brakesKm > 0 && (vehicle.brakesKm - vehicle.currentKm) <= 1000) ||
+            (vehicle.bearingsKm > 0 && (vehicle.bearingsKm - vehicle.currentKm) <= 1000) ||
             getBrakeFluidDateStatus(vehicle.brakeFluidDate, vehicle.brakeFluidLimitMonths).status === 'expired' ||
             getFridexDateStatus(vehicle.fridexDate, vehicle.fridexLimitMonths).status === 'expired' ||
             greenCardStatus.status === 'expired' ||

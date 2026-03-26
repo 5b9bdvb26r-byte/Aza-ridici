@@ -14,11 +14,11 @@ export async function GET() {
     const now = new Date();
 
     const count = vehicles.filter((v) => {
-      // Km-based checks
-      const oilAlert = v.oilKm > 0 && v.currentKm >= v.oilKm;
-      const adblueAlert = v.adblueLimitKm > 0 && v.adblueKm > 0 && v.currentKm >= v.adblueKm;
-      const brakesAlert = v.brakesKm > 0 && v.currentKm >= v.brakesKm;
-      const bearingsAlert = v.bearingsKm > 0 && v.currentKm >= v.bearingsKm;
+      // Km-based checks (alert when 1000 km or less remaining for oil/brakes/bearings, 100 km for AdBlue)
+      const oilAlert = v.oilKm > 0 && (v.oilKm - v.currentKm) <= 1000;
+      const adblueAlert = v.adblueLimitKm > 0 && v.adblueKm > 0 && (v.adblueKm - v.currentKm) <= 100;
+      const brakesAlert = v.brakesKm > 0 && (v.brakesKm - v.currentKm) <= 1000;
+      const bearingsAlert = v.bearingsKm > 0 && (v.bearingsKm - v.currentKm) <= 1000;
 
       // Date-based checks
       const brakeFluidExpired = v.brakeFluidDate ? new Date(v.brakeFluidDate) <= now : false;
