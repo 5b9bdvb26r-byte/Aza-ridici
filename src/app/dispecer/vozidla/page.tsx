@@ -426,9 +426,9 @@ export default function VehiclesPage() {
   }).length;
 
   // Komponenta pro progress bar podle tachometru
-  const TachoProgressBar = ({ targetKm, lastServiceKm, currentKm, intervalKm, label, icon, onEdit }: {
+  const TachoProgressBar = ({ targetKm, lastServiceKm, currentKm, intervalKm, label, icon, warningKm = 1000, onEdit }: {
     targetKm: number; lastServiceKm: number; currentKm: number; intervalKm: number; label: string; icon: string;
-    onEdit?: () => void;
+    warningKm?: number; onEdit?: () => void;
   }) => {
     // Pokud cíl není nastavený (0), zobrazit "Nenastaveno"
     if (targetKm === 0) {
@@ -455,9 +455,7 @@ export default function VehiclesPage() {
     const elapsed = currentKm - startKm;
     const percentage = intervalKm > 0 ? Math.min(Math.max((elapsed / intervalKm) * 100, 0), 100) : 0;
     const needsAttention = remaining <= 0;
-    // "Brzy" = zbývá méně než 20% intervalu (min. 500 km), aby to fungovalo i pro krátké intervaly jako AdBlue
-    const nearThreshold = Math.max(intervalKm * 0.2, 500);
-    const nearLimit = remaining > 0 && remaining <= nearThreshold;
+    const nearLimit = remaining > 0 && remaining <= warningKm;
 
     return (
       <div className={cn(
@@ -484,7 +482,7 @@ export default function VehiclesPage() {
         <div className="h-2 bg-gray-200 rounded-full overflow-hidden mb-1">
           <div
             className={cn('h-full transition-all',
-              needsAttention ? 'bg-red-500' : nearLimit ? 'bg-orange-500' : percentage > 60 ? 'bg-yellow-500' : 'bg-green-500'
+              needsAttention ? 'bg-red-500' : nearLimit ? 'bg-orange-500' : 'bg-green-500'
             )}
             style={{ width: `${percentage}%` }}
           />
@@ -564,7 +562,7 @@ export default function VehiclesPage() {
           <div
             className={cn(
               'h-full transition-all',
-              needsAttention ? 'bg-red-500' : nearLimit ? 'bg-orange-500' : percentage > 50 ? 'bg-yellow-500' : 'bg-green-500'
+              needsAttention ? 'bg-red-500' : nearLimit ? 'bg-orange-500' : 'bg-green-500'
             )}
             style={{ width: `${displayPercentage}%` }}
           />
@@ -872,6 +870,7 @@ export default function VehiclesPage() {
                     intervalKm={vehicle.adblueLimitKm}
                     label="AdBlue"
                     icon="💧"
+                    warningKm={100}
                     onEdit={() => {
                       setEditTargetModal({ vehicle, type: 'adblue', label: 'AdBlue' });
                       setEditTargetValue(vehicle.adblueLastKm.toString());
