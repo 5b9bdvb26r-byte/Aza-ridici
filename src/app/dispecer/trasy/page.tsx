@@ -128,6 +128,20 @@ export default function RoutesPage() {
   });
   const [isSavingReport, setIsSavingReport] = useState(false);
 
+  // Vyplnění reportu za řidiče (dispečer)
+  const [createReportModal, setCreateReportModal] = useState<Route | null>(null);
+  const [createReportForm, setCreateReportForm] = useState({
+    vehicleId: '',
+    endKm: '',
+    fuelCost: '',
+    adblueCost: '',
+    carWashCost: '',
+    avgConsumption: '',
+    carCheck: 'OK',
+    carCheckNote: '',
+  });
+  const [isCreatingReport, setIsCreatingReport] = useState(false);
+
   // Tisk
   const [printRoutes, setPrintRoutes] = useState<Route[] | null>(null);
   const [printTitle, setPrintTitle] = useState('');
@@ -409,6 +423,57 @@ export default function RoutesPage() {
       const bOrder = bAvail ? order[bAvail.status] : 3;
       return aOrder - bOrder;
     });
+  };
+
+  const openCreateReport = (route: Route) => {
+    setCreateReportForm({
+      vehicleId: route.vehicle?.id || '',
+      endKm: '',
+      fuelCost: '',
+      adblueCost: '',
+      carWashCost: '',
+      avgConsumption: '',
+      carCheck: 'OK',
+      carCheckNote: '',
+    });
+    setCreateReportModal(route);
+  };
+
+  const handleCreateReport = async () => {
+    if (!createReportModal) return;
+    if (!createReportForm.vehicleId || !createReportForm.endKm) {
+      alert('Vozidlo a konečný stav km jsou povinné');
+      return;
+    }
+    setIsCreatingReport(true);
+    try {
+      const response = await fetch('/api/daily-reports', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          routeId: createReportModal.id,
+          vehicleId: createReportForm.vehicleId,
+          endKm: createReportForm.endKm,
+          fuelCost: createReportForm.fuelCost || '0',
+          adblueCost: createReportForm.adblueCost || '0',
+          carWashCost: createReportForm.carWashCost || '0',
+          avgConsumption: createReportForm.avgConsumption || '',
+          carCheck: createReportForm.carCheck,
+          carCheckNote: createReportForm.carCheckNote,
+        }),
+      });
+      if (response.ok) {
+        await fetchRoutes();
+        setCreateReportModal(null);
+      } else {
+        const err = await response.json();
+        alert(err.error || 'Chyba při vytváření reportu');
+      }
+    } catch (error) {
+      console.error('Chyba při vytváření reportu:', error);
+    } finally {
+      setIsCreatingReport(false);
+    }
   };
 
   const openEditReport = (report: DailyReport) => {
@@ -1060,7 +1125,7 @@ export default function RoutesPage() {
                         : `${pendingCount} tras bez reportu`}
                     </div>
                     <div className="text-sm text-orange-600">
-                      Řidiči musí vyplnit denní report po jízdě
+                      Vyplňte report nebo počkejte na řidiče
                     </div>
                   </div>
                 </div>
@@ -1071,6 +1136,7 @@ export default function RoutesPage() {
                   <RouteCard key={route.id} route={route} expanded={expandedRoutes.has(route.id)}
                     onToggle={() => toggleRoute(route.id)} onEdit={handleEdit}
                     onDelete={handleDelete} onStatusChange={handleStatusChange}
+                    onCreateReport={openCreateReport}
                     showPendingBadge />
                 ))}
               </div>
@@ -1384,13 +1450,118 @@ export default function RoutesPage() {
           </div>
         </div>
       )}
+
+      {/* Modál - Vyplnit report za řidiče */}
+      {createReportModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold mb-1">Vyplnit report za řidiče</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              <strong>{createReportModal.name}</strong>
+              {createReportModal.driver && (
+                <span> · {createReportModal.driver.name}</span>
+              )}
+              <span> · {format(new Date(createReportModal.date), 'd.M.yyyy', { locale: cs })}</span>
+            </p>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Vozidlo *</label>
+                <select
+                  value={createReportForm.vehicleId}
+                  onChange={(e) => setCreateReportForm({ ...createReportForm, vehicleId: e.target.value })}
+                  className="input w-full"
+                >
+                  <option value="">Vyberte vozidlo</option>
+                  {vehicles.map((v) => (
+                    <option key={v.id} value={v.id}>{v.name} ({v.spz}) – tach.: {v.currentKm.toLocaleString('cs-CZ')} km</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Konečný stav tachometru (km) *</label>
+                <input type="number" value={createReportForm.endKm}
+                  onChange={(e) => setCreateReportForm({ ...createReportForm, endKm: e.target.value })}
+                  className="input w-full" placeholder="Stav tachometru po jízdě" min="0" />
+                {createReportForm.vehicleId && (() => {
+                  const selectedVehicle = vehicles.find(v => v.id === createReportForm.vehicleId);
+                  if (!selectedVehicle) return null;
+                  const diff = createReportForm.endKm ? parseInt(createReportForm.endKm) - selectedVehicle.currentKm : 0;
+                  return (
+                    <p className="text-sm text-gray-500 mt-1">
+                      Předchozí: {selectedVehicle.currentKm.toLocaleString('cs-CZ')} km
+                      {diff > 0 && (
+                        <span className="text-primary-600 font-medium ml-2">
+                          (ujeté: {diff.toLocaleString('cs-CZ')} km)
+                        </span>
+                      )}
+                    </p>
+                  );
+                })()}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nafta (Kč)</label>
+                <input type="number" value={createReportForm.fuelCost}
+                  onChange={(e) => setCreateReportForm({ ...createReportForm, fuelCost: e.target.value })}
+                  className="input w-full" min="0" step="1" placeholder="0" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">AdBlue (Kč)</label>
+                <input type="number" value={createReportForm.adblueCost}
+                  onChange={(e) => setCreateReportForm({ ...createReportForm, adblueCost: e.target.value })}
+                  className="input w-full" min="0" step="1" placeholder="0" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Myčka (Kč)</label>
+                <input type="number" value={createReportForm.carWashCost}
+                  onChange={(e) => setCreateReportForm({ ...createReportForm, carWashCost: e.target.value })}
+                  className="input w-full" min="0" step="1" placeholder="0" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Průměrná spotřeba (l/100km)</label>
+                <input type="number" value={createReportForm.avgConsumption}
+                  onChange={(e) => setCreateReportForm({ ...createReportForm, avgConsumption: e.target.value })}
+                  className="input w-full" min="0" step="0.1" placeholder="Nepovinné" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Stav vozidla</label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setCreateReportForm({ ...createReportForm, carCheck: 'OK', carCheckNote: '' })}
+                    className={cn('px-4 py-2 rounded-lg text-sm font-medium flex-1',
+                      createReportForm.carCheck === 'OK' ? 'bg-green-100 text-green-700 ring-2 ring-green-500' : 'bg-gray-100 text-gray-600')}
+                  >OK</button>
+                  <button
+                    onClick={() => setCreateReportForm({ ...createReportForm, carCheck: 'NOK' })}
+                    className={cn('px-4 py-2 rounded-lg text-sm font-medium flex-1',
+                      createReportForm.carCheck === 'NOK' ? 'bg-red-100 text-red-700 ring-2 ring-red-500' : 'bg-gray-100 text-gray-600')}
+                  >NOK</button>
+                </div>
+              </div>
+              {createReportForm.carCheck === 'NOK' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Popis závady</label>
+                  <textarea value={createReportForm.carCheckNote}
+                    onChange={(e) => setCreateReportForm({ ...createReportForm, carCheckNote: e.target.value })}
+                    className="input w-full min-h-[80px] resize-y" />
+                </div>
+              )}
+            </div>
+            <div className="flex gap-3 mt-4">
+              <button onClick={() => setCreateReportModal(null)} className="btn-secondary flex-1">Zrušit</button>
+              <button onClick={handleCreateReport} disabled={isCreatingReport} className="btn-primary flex-1">
+                {isCreatingReport ? 'Ukládám...' : 'Vytvořit report'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 // ===== ROUTE CARD =====
 function RouteCard({
-  route, expanded, onToggle, onEdit, onDelete, onStatusChange, onEditReport, hideDate, showPendingBadge, showReport,
+  route, expanded, onToggle, onEdit, onDelete, onStatusChange, onEditReport, onCreateReport, hideDate, showPendingBadge, showReport,
 }: {
   route: Route;
   expanded: boolean;
@@ -1399,6 +1570,7 @@ function RouteCard({
   onDelete: (id: string) => void;
   onStatusChange: (route: Route, status: string) => void;
   onEditReport?: (report: DailyReport) => void;
+  onCreateReport?: (route: Route) => void;
   hideDate?: boolean;
   showPendingBadge?: boolean;
   showReport?: boolean;
@@ -1521,6 +1693,12 @@ function RouteCard({
 
         {/* Akce */}
         <div className="flex items-center gap-1 flex-shrink-0">
+          {showPendingBadge && onCreateReport && !report && (
+            <button onClick={() => onCreateReport(route)}
+              className="px-2.5 py-1.5 bg-primary-100 text-primary-700 rounded-lg text-xs font-medium hover:bg-primary-200 transition-colors">
+              📝 Vyplnit report
+            </button>
+          )}
           {route.status === 'PLANNED' && (
             <button onClick={() => onStatusChange(route, 'IN_PROGRESS')}
               className="px-2.5 py-1.5 bg-yellow-100 text-yellow-700 rounded-lg text-xs font-medium hover:bg-yellow-200 transition-colors">

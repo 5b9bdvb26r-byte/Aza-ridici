@@ -54,7 +54,9 @@ export async function POST(request: Request) {
       );
     }
 
-    // Ověřit, že trasa existuje a je přiřazena tomuto řidiči
+    const isDispatcher = ['DISPATCHER', 'ADMIN'].includes(session.user.role);
+
+    // Ověřit, že trasa existuje
     const route = await prisma.route.findUnique({
       where: { id: routeId },
       include: { vehicle: true, dailyReport: true },
@@ -64,7 +66,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Trasa nenalezena' }, { status: 404 });
     }
 
-    if (route.driverId !== session.user.id) {
+    // Dispečer může vyplnit report za řidiče, řidič jen za sebe
+    if (!isDispatcher && route.driverId !== session.user.id) {
       return NextResponse.json(
         { error: 'Tato trasa není přiřazena vám' },
         { status: 403 }
@@ -77,6 +80,9 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+
+    // Použít řidiče z trasy (ne přihlášeného uživatele, pokud vyplňuje dispečer)
+    const reportDriverId = route.driverId || session.user.id;
 
     const endKmValue = parseInt(endKm);
 
@@ -99,7 +105,7 @@ export async function POST(request: Request) {
       const report = await tx.dailyReport.create({
         data: {
           routeId,
-          driverId: session.user.id,
+          driverId: reportDriverId,
           actualKm: kmValue,
           endKm: endKmValue,
           fuelCost: fuelCostValue,
