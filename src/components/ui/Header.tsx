@@ -232,6 +232,7 @@ export function Header() {
                 <NavLink href="/ridic">Dostupnost</NavLink>
                 <NavLink href="/ridic/trasy" badge={pendingRoutes}>Moje trasy</NavLink>
                 <NavLink href="/ridic/hlaseni">Hlášení</NavLink>
+                <NavLink href="/ridic/vozidla">Vozidla</NavLink>
                 <NavLink href="/ridic/statistiky">Statistiky</NavLink>
                 <NavLink href="/ridic/poznamky">Poznámky</NavLink>
               </>
@@ -266,6 +267,7 @@ export function Header() {
                   <NavLink href="/ridic">Dostupnost</NavLink>
                   <NavLink href="/ridic/trasy" badge={pendingRoutes}>Moje trasy</NavLink>
                   <NavLink href="/ridic/hlaseni">Hlášení</NavLink>
+                  <NavLink href="/ridic/vozidla">Vozidla</NavLink>
                   <NavLink href="/ridic/statistiky">Statistiky</NavLink>
                   <NavLink href="/ridic/poznamky">Poznámky</NavLink>
                 </>
