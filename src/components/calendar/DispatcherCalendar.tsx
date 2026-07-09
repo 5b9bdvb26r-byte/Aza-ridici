@@ -147,8 +147,15 @@ export function DispatcherCalendar({
           const dayRoutes = getRoutesForDay(day);
           const availableCount = getAvailableCount(day);
 
-          // Řidiči kteří jsou dostupní (mají záznam AVAILABLE)
+          // Řidiči kteří jsou dostupní (AVAILABLE) nebo nedostupní (UNAVAILABLE)
           const availableDrivers = driversStatus.filter((s) => s.status === 'AVAILABLE');
+          const unavailableDrivers = driversStatus.filter((s) => s.status === 'UNAVAILABLE');
+          const markedDrivers: Array<{ driver: Driver; mark: 'available' | 'unavailable' }> = [
+            ...availableDrivers.map((s) => ({ driver: s.driver, mark: 'available' as const })),
+            ...unavailableDrivers.map((s) => ({ driver: s.driver, mark: 'unavailable' as const })),
+          ];
+          const shownMarks = markedDrivers.slice(0, 8);
+          const hiddenMarksCount = markedDrivers.length - shownMarks.length;
 
           return (
             <button
@@ -208,21 +215,36 @@ export function DispatcherCalendar({
                 </div>
               )}
 
-              {/* Barevné tečky dostupných řidičů */}
-              {isCurrentMonth && availableDrivers.length > 0 && (
+              {/* Barevné tečky řidičů (Může = plný puntik, Nemůže = puntik s červenou diagonálou) */}
+              {isCurrentMonth && shownMarks.length > 0 && (
                 <div className="mt-auto pt-0.5 sm:pt-1 border-t border-gray-100">
-                  <div className="flex flex-wrap gap-0.5 justify-center">
-                    {availableDrivers.slice(0, 8).map(({ driver }) => (
-                      <div
-                        key={driver.id}
-                        className="w-2 h-2 sm:w-3 sm:h-3 rounded-full"
-                        style={{ backgroundColor: driver.color || '#9CA3AF' }}
-                        title={`${driver.name}: může`}
-                      />
-                    ))}
-                    {availableDrivers.length > 8 && (
+                  <div className="flex flex-wrap gap-0.5 justify-center items-center">
+                    {shownMarks.map(({ driver, mark }) => {
+                      const color = driver.color || '#9CA3AF';
+                      if (mark === 'available') {
+                        return (
+                          <div
+                            key={`av-${driver.id}`}
+                            className="w-2 h-2 sm:w-3 sm:h-3 rounded-full"
+                            style={{ backgroundColor: color }}
+                            title={`${driver.name}: může`}
+                          />
+                        );
+                      }
+                      return (
+                        <div
+                          key={`un-${driver.id}`}
+                          className="w-2 h-2 sm:w-3 sm:h-3 rounded-full"
+                          style={{
+                            background: `linear-gradient(to top right, ${color} 0%, ${color} 42%, #DC2626 42%, #DC2626 58%, ${color} 58%, ${color} 100%)`,
+                          }}
+                          title={`${driver.name}: nemůže`}
+                        />
+                      );
+                    })}
+                    {hiddenMarksCount > 0 && (
                       <span className="text-[9px] text-gray-400 hidden sm:inline">
-                        +{availableDrivers.length - 8}
+                        +{hiddenMarksCount}
                       </span>
                     )}
                   </div>
@@ -247,7 +269,7 @@ export function DispatcherCalendar({
           ))}
         </div>
         <p className="text-center text-xs text-gray-400 mt-2">
-          Tečka = řidič může v daný den
+          Tečka = může · Tečka s červenou čarou = nemůže · Bez tečky = nevyplněno
         </p>
       </div>
     </div>

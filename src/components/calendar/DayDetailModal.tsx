@@ -47,7 +47,13 @@ export function DayDetailModal({
   const availableDrivers = driversStatus.filter((s) => s.status === 'AVAILABLE');
 
   const handleToggle = async (driverId: string, currentStatus: AvailabilityStatus) => {
-    const newStatus: AvailabilityStatus = currentStatus === 'AVAILABLE' ? null : 'AVAILABLE';
+    // Cyklus: null (Nevyplněno) → AVAILABLE (Může) → UNAVAILABLE (Nemůže) → null
+    const newStatus: AvailabilityStatus =
+      currentStatus === 'AVAILABLE'
+        ? 'UNAVAILABLE'
+        : currentStatus === 'UNAVAILABLE'
+          ? null
+          : 'AVAILABLE';
     setSavingDriverId(driverId);
     try {
       const year = date.getFullYear();
@@ -181,12 +187,13 @@ export function DayDetailModal({
                 Dostupnost řidičů
               </h4>
               <p className="text-sm text-gray-500 mb-3 sm:mb-4">
-                Klikněte na řidiče pro přepnutí může / nemůže.
+                Klikněte na řidiče: nevyplněno → může → nemůže → nevyplněno.
               </p>
 
               <div className="space-y-2 sm:space-y-3">
                 {driversStatus.map(({ driver, status }) => {
                   const isAvailable = status === 'AVAILABLE';
+                  const isUnavailable = status === 'UNAVAILABLE';
                   return (
                     <button
                       key={driver.id}
@@ -194,9 +201,9 @@ export function DayDetailModal({
                       disabled={savingDriverId === driver.id}
                       className={cn(
                         'w-full flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg border-2 transition-all text-left',
-                        isAvailable
-                          ? 'border-green-400 bg-green-50'
-                          : 'border-gray-200 bg-gray-50 hover:border-gray-300',
+                        isAvailable && 'border-green-400 bg-green-50',
+                        isUnavailable && 'border-red-400 bg-red-50',
+                        !isAvailable && !isUnavailable && 'border-gray-200 bg-gray-50 hover:border-gray-300',
                         savingDriverId === driver.id && 'opacity-50 pointer-events-none'
                       )}
                     >
@@ -216,11 +223,11 @@ export function DayDetailModal({
                       {/* Status indikátor */}
                       <div className={cn(
                         'px-3 py-1 rounded-full text-sm font-medium flex-shrink-0',
-                        isAvailable
-                          ? 'bg-green-500 text-white'
-                          : 'bg-gray-200 text-gray-500'
+                        isAvailable && 'bg-green-500 text-white',
+                        isUnavailable && 'bg-red-500 text-white',
+                        !isAvailable && !isUnavailable && 'bg-gray-200 text-gray-500'
                       )}>
-                        {isAvailable ? 'Může' : 'Nemůže'}
+                        {isAvailable ? 'Může' : isUnavailable ? 'Nemůže' : 'Nevyplněno'}
                       </div>
                     </button>
                   );
