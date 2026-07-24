@@ -33,9 +33,9 @@ function recordFailedAttempt(identifier: string) {
   // Ochrana proti nekonečnému růstu mapy
   if (loginAttempts.size > 10000) {
     const cutoff = now - WINDOW_MS;
-    for (const [key, value] of loginAttempts) {
+    loginAttempts.forEach((value, key) => {
       if (value.firstAttempt < cutoff) loginAttempts.delete(key);
-    }
+    });
   }
 }
 
