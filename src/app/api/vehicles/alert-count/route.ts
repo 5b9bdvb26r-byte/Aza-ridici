@@ -10,6 +10,14 @@ export async function GET() {
       return NextResponse.json({ error: 'Neautorizováno' }, { status: 401 });
     }
 
+    if (
+      session.user.role !== 'DISPATCHER' &&
+      session.user.role !== 'ADMIN' &&
+      session.user.role !== 'WAREHOUSE'
+    ) {
+      return NextResponse.json({ error: 'Nedostatečná oprávnění' }, { status: 403 });
+    }
+
     const vehicles = await prisma.vehicle.findMany();
     const now = new Date();
 
