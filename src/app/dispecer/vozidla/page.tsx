@@ -663,8 +663,9 @@ export default function VehiclesPage() {
                   onChange={(e) => setFormData({ ...formData, oilLimitKm: e.target.value })}
                   className="input"
                   placeholder="15000"
-                  min="1000"
+                  min="0"
                 />
+                <p className="text-xs text-gray-500 mt-1">0 = nesledovat</p>
               </div>
               <div>
                 <label htmlFor="adblueLimitKm" className="label">
@@ -677,8 +678,9 @@ export default function VehiclesPage() {
                   onChange={(e) => setFormData({ ...formData, adblueLimitKm: e.target.value })}
                   className="input"
                   placeholder="10000"
-                  min="1000"
+                  min="0"
                 />
+                <p className="text-xs text-gray-500 mt-1">0 = vypnout AdBlue u tohoto vozidla</p>
               </div>
               <div>
                 <label htmlFor="brakesLimitKm" className="label">
@@ -691,8 +693,9 @@ export default function VehiclesPage() {
                   onChange={(e) => setFormData({ ...formData, brakesLimitKm: e.target.value })}
                   className="input"
                   placeholder="60000"
-                  min="1000"
+                  min="0"
                 />
+                <p className="text-xs text-gray-500 mt-1">0 = nesledovat</p>
               </div>
               <div>
                 <label htmlFor="greenCardLimitMonths" className="label">
