@@ -20,7 +20,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { spz, name, currentKm, oilLimitKm, adblueLimitKm, brakesLimitKm, bearingsLimitKm, greenCardLimitMonths, brakeFluidLimitMonths, fridexLimitMonths } = body;
+    const { spz, name, currentKm, oilLimitKm, adblueLimitKm, brakesLimitKm, greenCardLimitMonths, brakeFluidLimitMonths, fridexLimitMonths } = body;
 
     const updateData: {
       spz?: string;
@@ -29,7 +29,6 @@ export async function PUT(
       oilLimitKm?: number;
       adblueLimitKm?: number;
       brakesLimitKm?: number;
-      bearingsLimitKm?: number;
       greenCardLimitMonths?: number;
       brakeFluidLimitMonths?: number;
       fridexLimitMonths?: number;
@@ -41,29 +40,40 @@ export async function PUT(
     if (oilLimitKm !== undefined) updateData.oilLimitKm = parseInt(oilLimitKm);
     if (adblueLimitKm !== undefined) updateData.adblueLimitKm = parseInt(adblueLimitKm);
     if (brakesLimitKm !== undefined) updateData.brakesLimitKm = parseInt(brakesLimitKm);
-    if (bearingsLimitKm !== undefined) updateData.bearingsLimitKm = parseInt(bearingsLimitKm);
     if (greenCardLimitMonths !== undefined) updateData.greenCardLimitMonths = parseInt(greenCardLimitMonths);
     if (brakeFluidLimitMonths !== undefined) updateData.brakeFluidLimitMonths = parseInt(brakeFluidLimitMonths);
     if (fridexLimitMonths !== undefined) updateData.fridexLimitMonths = parseInt(fridexLimitMonths);
 
     // Při změně intervalu přepočítat cíl (target = lastKm + newInterval)
+    // Speciální případ: interval=0 (vypnutí sledování) → vynulovat i target/last hodnoty
     const existingVehicle = await prisma.vehicle.findUnique({ where: { id: params.id } });
     if (existingVehicle) {
       if (oilLimitKm !== undefined) {
         const newLimit = parseInt(oilLimitKm);
-        (updateData as Record<string, number>).oilKm = existingVehicle.oilLastKm + newLimit;
+        if (newLimit === 0) {
+          (updateData as Record<string, number>).oilKm = 0;
+          (updateData as Record<string, number>).oilLastKm = 0;
+        } else {
+          (updateData as Record<string, number>).oilKm = existingVehicle.oilLastKm + newLimit;
+        }
       }
       if (adblueLimitKm !== undefined) {
         const newLimit = parseInt(adblueLimitKm);
-        (updateData as Record<string, number>).adblueKm = existingVehicle.adblueLastKm + newLimit;
+        if (newLimit === 0) {
+          (updateData as Record<string, number>).adblueKm = 0;
+          (updateData as Record<string, number>).adblueLastKm = 0;
+        } else {
+          (updateData as Record<string, number>).adblueKm = existingVehicle.adblueLastKm + newLimit;
+        }
       }
       if (brakesLimitKm !== undefined) {
         const newLimit = parseInt(brakesLimitKm);
-        (updateData as Record<string, number>).brakesKm = existingVehicle.brakesLastKm + newLimit;
-      }
-      if (bearingsLimitKm !== undefined) {
-        const newLimit = parseInt(bearingsLimitKm);
-        (updateData as Record<string, number>).bearingsKm = existingVehicle.bearingsLastKm + newLimit;
+        if (newLimit === 0) {
+          (updateData as Record<string, number>).brakesKm = 0;
+          (updateData as Record<string, number>).brakesLastKm = 0;
+        } else {
+          (updateData as Record<string, number>).brakesKm = existingVehicle.brakesLastKm + newLimit;
+        }
       }
     }
 

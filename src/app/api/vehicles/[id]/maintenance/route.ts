@@ -23,7 +23,7 @@ export async function POST(
     const { action, type, km, date } = body;
 
     // action: 'add' (přidat km), 'reset' (resetovat počítadlo), 'setDate' (nastavit datum)
-    // type: 'oil', 'adblue', 'brakes', 'bearings', 'brakeFluid', 'technical'
+    // type: 'oil', 'adblue', 'brakes', 'brakeFluid', 'technical'
 
     const vehicle = await prisma.vehicle.findUnique({
       where: { id: params.id },
@@ -50,10 +50,6 @@ export async function POST(
         updateData.brakesLastKm = curKm;
         updateData.brakesKm = curKm + vehicle.brakesLimitKm;
         updateData.brakesLastReset = new Date();
-      } else if (type === 'bearings') {
-        updateData.bearingsLastKm = curKm;
-        updateData.bearingsKm = curKm + vehicle.bearingsLimitKm;
-        updateData.bearingsLastReset = new Date();
       }
     } else if (action === 'setTarget' && km && type) {
       // Nastavit km poslední výměny → cíl = lastKm + interval
@@ -61,7 +57,6 @@ export async function POST(
       if (type === 'oil') { updateData.oilLastKm = lastKm; updateData.oilKm = lastKm + vehicle.oilLimitKm; updateData.oilLastReset = new Date(); }
       else if (type === 'adblue') { updateData.adblueLastKm = lastKm; updateData.adblueKm = lastKm + vehicle.adblueLimitKm; updateData.adblueLastReset = new Date(); }
       else if (type === 'brakes') { updateData.brakesLastKm = lastKm; updateData.brakesKm = lastKm + vehicle.brakesLimitKm; updateData.brakesLastReset = new Date(); }
-      else if (type === 'bearings') { updateData.bearingsLastKm = lastKm; updateData.bearingsKm = lastKm + vehicle.bearingsLimitKm; updateData.bearingsLastReset = new Date(); }
     } else if (action === 'setDate' && date) {
       // Nastavit datum
       if (type === 'technical') {

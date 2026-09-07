@@ -66,12 +66,6 @@ model Vehicle {
   brakesLimitKm      Int      @default(60000) // interval pro výpočet dalšího cíle (km)
   brakesLastReset    DateTime @default(now()) // datum poslední výměny
 
-  // Sledování ložisek
-  bearingsKm         Int      @default(0)    // cílový stav tachometru pro další výměnu
-  bearingsLastKm     Int      @default(0)    // stav tachometru při poslední výměně
-  bearingsLimitKm    Int      @default(100000) // interval pro výpočet dalšího cíle (km)
-  bearingsLastReset  DateTime @default(now()) // datum poslední výměny
-
   // Brzdová kapalina - datum expirace
   brakeFluidDate         DateTime? // datum expirace brzdové kapaliny (vypočteno: lastDate + limitMonths)
   brakeFluidLastDate     DateTime? // datum poslední výměny brzdové kapaliny

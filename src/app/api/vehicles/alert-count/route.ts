@@ -22,11 +22,10 @@ export async function GET() {
     const now = new Date();
 
     const count = vehicles.filter((v) => {
-      // Km-based checks (alert when 1000 km or less remaining for oil/brakes/bearings, 100 km for AdBlue)
+      // Km-based checks (alert when 1000 km or less remaining for oil/brakes, 100 km for AdBlue)
       const oilAlert = v.oilKm > 0 && (v.oilKm - v.currentKm) <= 1000;
       const adblueAlert = v.adblueLimitKm > 0 && v.adblueKm > 0 && (v.adblueKm - v.currentKm) <= 100;
       const brakesAlert = v.brakesKm > 0 && (v.brakesKm - v.currentKm) <= 1000;
-      const bearingsAlert = v.bearingsKm > 0 && (v.bearingsKm - v.currentKm) <= 1000;
 
       // Date-based checks (14 days for brake fluid, fridex, green card, vignette; 60 days for STK)
       const daysUntil = (date: Date | null) => date ? Math.ceil((new Date(date).getTime() - now.getTime()) / 86400000) : null;
@@ -36,7 +35,7 @@ export async function GET() {
       const technicalAlert = daysUntil(v.technicalInspectionDate) !== null && daysUntil(v.technicalInspectionDate)! <= 60;
       const vignetteAlert = daysUntil(v.highwayVignetteDate) !== null && daysUntil(v.highwayVignetteDate)! <= 14;
 
-      return oilAlert || adblueAlert || brakesAlert || bearingsAlert ||
+      return oilAlert || adblueAlert || brakesAlert ||
         brakeFluidAlert || fridexAlert || greenCardAlert || technicalAlert || vignetteAlert;
     }).length;
 

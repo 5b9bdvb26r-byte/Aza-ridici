@@ -31,10 +31,6 @@ interface Vehicle {
   brakesLastKm: number;
   brakesLimitKm: number;
   brakesLastReset: string;
-  bearingsKm: number;
-  bearingsLastKm: number;
-  bearingsLimitKm: number;
-  bearingsLastReset: string;
   brakeFluidDate: string | null;
   brakeFluidLastDate: string | null;
   brakeFluidLimitMonths: number;
@@ -291,7 +287,6 @@ export default function DriverVehiclesPage() {
             (vehicle.oilKm > 0 && (vehicle.oilKm - vehicle.currentKm) <= 1000) ||
             (vehicle.adblueLimitKm > 0 && vehicle.adblueKm > 0 && (vehicle.adblueKm - vehicle.currentKm) <= 100) ||
             (vehicle.brakesKm > 0 && (vehicle.brakesKm - vehicle.currentKm) <= 1000) ||
-            (vehicle.bearingsKm > 0 && (vehicle.bearingsKm - vehicle.currentKm) <= 1000) ||
             ['expired', 'soon'].includes(getBrakeFluidDateStatus(vehicle.brakeFluidDate, vehicle.brakeFluidLimitMonths).status) ||
             ['expired', 'soon'].includes(getFridexDateStatus(vehicle.fridexDate, vehicle.fridexLimitMonths).status) ||
             ['expired', 'soon'].includes(greenCardStatus.status) ||
@@ -349,14 +344,6 @@ export default function DriverVehiclesPage() {
                   intervalKm={vehicle.brakesLimitKm}
                   label="Brzdy"
                   icon="🛑"
-                />
-                <TachoProgressBar
-                  targetKm={vehicle.bearingsKm}
-                  lastServiceKm={vehicle.bearingsLastKm}
-                  currentKm={vehicle.currentKm}
-                  intervalKm={vehicle.bearingsLimitKm}
-                  label="Ložiska"
-                  icon="⚙️"
                 />
                 <DateProgressBar
                   label="Brzd. kap."
@@ -419,10 +406,6 @@ export default function DriverVehiclesPage() {
                     <div className="bg-gray-50 p-3 rounded-lg">
                       <div className="text-gray-500">🛑 Brzdy - poslední výměna</div>
                       <div className="font-medium">{format(new Date(vehicle.brakesLastReset), 'd.M.yyyy', { locale: cs })}</div>
-                    </div>
-                    <div className="bg-gray-50 p-3 rounded-lg">
-                      <div className="text-gray-500">⚙️ Ložiska - poslední výměna</div>
-                      <div className="font-medium">{format(new Date(vehicle.bearingsLastReset), 'd.M.yyyy', { locale: cs })}</div>
                     </div>
                     <div className="bg-gray-50 p-3 rounded-lg">
                       <div className="text-gray-500">💦 Brzdová kapalina</div>
