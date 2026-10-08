@@ -110,6 +110,7 @@ export default function RoutesPage() {
   // Filtry pro hotové trasy
   const [filterMonth, setFilterMonth] = useState(format(new Date(), 'yyyy-MM'));
   const [filterDriver, setFilterDriver] = useState('');
+  const [filterVehicle, setFilterVehicle] = useState('');
 
   // Modal pro dokončení jízdy
   const [completeModal, setCompleteModal] = useState<Route | null>(null);
@@ -547,10 +548,12 @@ export default function RoutesPage() {
         if (routeDate < monthStart || routeDate > monthEnd) return false;
         // Filtr dle řidiče
         if (filterDriver && r.driver?.id !== filterDriver) return false;
+        // Filtr dle vozidla
+        if (filterVehicle && r.vehicle?.id !== filterVehicle) return false;
         return true;
       })
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [routes, filterMonth, filterDriver]);
+  }, [routes, filterMonth, filterDriver, filterVehicle]);
 
   // Seskupit plánované dle data
   const groupedPlanned = useMemo(() => {
@@ -1150,7 +1153,7 @@ export default function RoutesPage() {
         <div>
           {/* Filtry */}
           <div className="card mb-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="label">Měsíc</label>
                 <select
@@ -1173,6 +1176,21 @@ export default function RoutesPage() {
                   <option value="">Všichni řidiči</option>
                   {drivers.map((d) => (
                     <option key={d.id} value={d.id}>{d.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="label">Vozidlo</label>
+                <select
+                  value={filterVehicle}
+                  onChange={(e) => setFilterVehicle(e.target.value)}
+                  className="input"
+                >
+                  <option value="">Všechna vozidla</option>
+                  {vehicles.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.name} ({v.spz})
+                    </option>
                   ))}
                 </select>
               </div>
